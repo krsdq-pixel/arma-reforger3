@@ -1,0 +1,6 @@
+{
+  "name": "Arma Reforger Fire Control System",
+  "description": "Vanilla tactical map and ballistic fire control calculator for Arma Reforger terrains including Everon, Arland, and Kolguyev.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

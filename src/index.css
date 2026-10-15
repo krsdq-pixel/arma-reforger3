@@ -1,0 +1,134 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@layer base {
+  :root {
+    --font-tactical: 'Chakra Petch', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  
+  body {
+    background-color: #0b0f14;
+    color: #e2e8f0;
+    font-family: var(--font-tactical), system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+}
+
+/* Leaflet styling fixes for Arma Reforger theme */
+.leaflet-container {
+  background-color: #0a0e14 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  outline: none;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 6px !important;
+  overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  color: #38bdf8 !important;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2) !important;
+  transition: all 0.15s ease-in-out;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: rgba(30, 58, 138, 0.9) !important;
+  color: #ffffff !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(11, 15, 20, 0.85) !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+  border-top-left-radius: 4px;
+  padding: 2px 8px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaflet-control-attribution a {
+  color: #38bdf8 !important;
+}
+
+/* Tactical Crosshairs & Pulsing Markers */
+@keyframes pulse-weapon {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.15); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 0.9; }
+}
+
+@keyframes pulse-target {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.2); opacity: 0.3; }
+  100% { transform: scale(1); opacity: 0.9; }
+}
+
+.marker-pulse-weapon {
+  animation: pulse-weapon 2.5s infinite ease-in-out;
+}
+
+.marker-pulse-target {
+  animation: pulse-target 1.8s infinite ease-in-out;
+}
+
+/* Custom Tactical Tooltips */
+.tactical-tooltip {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border: 1px solid #38bdf8 !important;
+  color: #f8fafc !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+}
+
+.tactical-tooltip::before {
+  border-top-color: #38bdf8 !important;
+}
+
+.poi-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 3px #000, 1px 1px 2px #000, -1px -1px 2px #000;
+  pointer-events: none;
+}
+
+/* Ensure maximum tile sharpness for roads, contours, and vegetation */
+.leaflet-tile {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+/* Marker Touch Optimization */
+.leaflet-marker-icon {
+  touch-action: none !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Ruler Measurement Badge */
+.ruler-badge {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid #f59e0b !important;
+  color: #fbbf24 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+  white-space: nowrap !important;
+}
+
