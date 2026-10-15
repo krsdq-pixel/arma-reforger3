@@ -1,4 +1,1183 @@
-import { BallisticSolution, WeaponConfig } from '../types';
+import { BallisticSolution, WeaponConfig, BallisticDataPoint } from '../types';
+import { solveMortarFireMission } from '../services/ballisticsCalculator';
+
+// ===========================================================================
+// OFFICIAL IN-GAME MANUAL TABLES: US M252 81mm MORTAR (M821 HE SHELL)
+// Direct 1:1 transcription from official in-game clipboard instruction sheets
+// ===========================================================================
+
+export const M252_M821_HE_CHARGE_0: BallisticDataPoint[] = [
+  {
+    "range": 50,
+    "elevation": 1456,
+    "tof": 15,
+    "dElevPer100m": 12,
+    "peakAlt": 276,
+    "angleImpact": 88,
+    "dispersion": 13
+  },
+  {
+    "range": 100,
+    "elevation": 1411,
+    "tof": 15,
+    "dElevPer100m": 12.2,
+    "peakAlt": 276,
+    "angleImpact": 85,
+    "dispersion": 13
+  },
+  {
+    "range": 150,
+    "elevation": 1365,
+    "tof": 14.9,
+    "dElevPer100m": 12.5,
+    "peakAlt": 272,
+    "angleImpact": 82,
+    "dispersion": 14
+  },
+  {
+    "range": 200,
+    "elevation": 1319,
+    "tof": 14.8,
+    "dElevPer100m": 12.9,
+    "peakAlt": 268,
+    "angleImpact": 79,
+    "dispersion": 14
+  },
+  {
+    "range": 250,
+    "elevation": 1269,
+    "tof": 14.6,
+    "dElevPer100m": 13.4,
+    "peakAlt": 261,
+    "angleImpact": 76,
+    "dispersion": 15
+  },
+  {
+    "range": 300,
+    "elevation": 1218,
+    "tof": 14.4,
+    "dElevPer100m": 14,
+    "peakAlt": 254,
+    "angleImpact": 73,
+    "dispersion": 15
+  },
+  {
+    "range": 350,
+    "elevation": 1160,
+    "tof": 14.1,
+    "dElevPer100m": 14.8,
+    "peakAlt": 244,
+    "angleImpact": 70,
+    "dispersion": 16
+  },
+  {
+    "range": 400,
+    "elevation": 1097,
+    "tof": 13.7,
+    "dElevPer100m": 15.9,
+    "peakAlt": 230,
+    "angleImpact": 66,
+    "dispersion": 17
+  },
+  {
+    "range": 450,
+    "elevation": 1025,
+    "tof": 13.2,
+    "dElevPer100m": 17.5,
+    "peakAlt": 214,
+    "angleImpact": 61,
+    "dispersion": 18
+  },
+  {
+    "range": 500,
+    "elevation": 927,
+    "tof": 12.4,
+    "dElevPer100m": 20.4,
+    "peakAlt": 188,
+    "angleImpact": 55,
+    "dispersion": 19
+  }
+];
+
+export const M252_M821_HE_CHARGE_1: BallisticDataPoint[] = [
+  {
+    "range": 100,
+    "elevation": 1446,
+    "tof": 19.5,
+    "dElevPer100m": 16,
+    "peakAlt": 466,
+    "angleImpact": 87,
+    "dispersion": 18
+  },
+  {
+    "range": 200,
+    "elevation": 1392,
+    "tof": 19.4,
+    "dElevPer100m": 16.5,
+    "peakAlt": 461,
+    "angleImpact": 84,
+    "dispersion": 19
+  },
+  {
+    "range": 300,
+    "elevation": 1336,
+    "tof": 19.2,
+    "dElevPer100m": 17.2,
+    "peakAlt": 452,
+    "angleImpact": 80,
+    "dispersion": 20
+  },
+  {
+    "range": 400,
+    "elevation": 1276,
+    "tof": 18.9,
+    "dElevPer100m": 18.1,
+    "peakAlt": 438,
+    "angleImpact": 77,
+    "dispersion": 21
+  },
+  {
+    "range": 500,
+    "elevation": 1213,
+    "tof": 18.6,
+    "dElevPer100m": 19.2,
+    "peakAlt": 424,
+    "angleImpact": 73,
+    "dispersion": 22
+  },
+  {
+    "range": 600,
+    "elevation": 1142,
+    "tof": 18.1,
+    "dElevPer100m": 20.7,
+    "peakAlt": 402,
+    "angleImpact": 69,
+    "dispersion": 24
+  },
+  {
+    "range": 700,
+    "elevation": 1060,
+    "tof": 17.4,
+    "dElevPer100m": 22.8,
+    "peakAlt": 371,
+    "angleImpact": 64,
+    "dispersion": 26
+  },
+  {
+    "range": 800,
+    "elevation": 955,
+    "tof": 16.4,
+    "dElevPer100m": 26.2,
+    "peakAlt": 330,
+    "angleImpact": 57,
+    "dispersion": 29
+  }
+];
+
+export const M252_M821_HE_CHARGE_2: BallisticDataPoint[] = [
+  {
+    "range": 200,
+    "elevation": 1432,
+    "tof": 24.8,
+    "dElevPer100m": 20,
+    "peakAlt": 754,
+    "angleImpact": 86,
+    "dispersion": 26
+  },
+  {
+    "range": 300,
+    "elevation": 1397,
+    "tof": 24.7,
+    "dElevPer100m": 20.5,
+    "peakAlt": 748,
+    "angleImpact": 84,
+    "dispersion": 27
+  },
+  {
+    "range": 400,
+    "elevation": 1362,
+    "tof": 24.6,
+    "dElevPer100m": 21,
+    "peakAlt": 742,
+    "angleImpact": 82,
+    "dispersion": 28
+  },
+  {
+    "range": 500,
+    "elevation": 1326,
+    "tof": 24.4,
+    "dElevPer100m": 21.7,
+    "peakAlt": 730,
+    "angleImpact": 80,
+    "dispersion": 30
+  },
+  {
+    "range": 600,
+    "elevation": 1288,
+    "tof": 24.2,
+    "dElevPer100m": 22.6,
+    "peakAlt": 718,
+    "angleImpact": 77,
+    "dispersion": 31
+  },
+  {
+    "range": 700,
+    "elevation": 1249,
+    "tof": 24,
+    "dElevPer100m": 23.6,
+    "peakAlt": 706,
+    "angleImpact": 75,
+    "dispersion": 33
+  },
+  {
+    "range": 800,
+    "elevation": 1208,
+    "tof": 23.7,
+    "dElevPer100m": 24.8,
+    "peakAlt": 688,
+    "angleImpact": 72,
+    "dispersion": 35
+  },
+  {
+    "range": 900,
+    "elevation": 1163,
+    "tof": 23.3,
+    "dElevPer100m": 26.3,
+    "peakAlt": 665,
+    "angleImpact": 70,
+    "dispersion": 37
+  },
+  {
+    "range": 1000,
+    "elevation": 1115,
+    "tof": 22.9,
+    "dElevPer100m": 28.1,
+    "peakAlt": 643,
+    "angleImpact": 67,
+    "dispersion": 40
+  },
+  {
+    "range": 1100,
+    "elevation": 1062,
+    "tof": 22.3,
+    "dElevPer100m": 30.5,
+    "peakAlt": 609,
+    "angleImpact": 64,
+    "dispersion": 43
+  },
+  {
+    "range": 1200,
+    "elevation": 999,
+    "tof": 21.5,
+    "dElevPer100m": 33.7,
+    "peakAlt": 566,
+    "angleImpact": 60,
+    "dispersion": 47
+  },
+  {
+    "range": 1300,
+    "elevation": 917,
+    "tof": 20.4,
+    "dElevPer100m": 38.8,
+    "peakAlt": 510,
+    "angleImpact": 55,
+    "dispersion": 52
+  },
+  {
+    "range": 1400,
+    "elevation": 765,
+    "tof": 17.8,
+    "dElevPer100m": 48,
+    "peakAlt": 388,
+    "angleImpact": 46,
+    "dispersion": 60
+  }
+];
+
+export const M252_M821_HE_CHARGE_3: BallisticDataPoint[] = [
+  {
+    "range": 300,
+    "elevation": 1423,
+    "tof": 28.9,
+    "dElevPer100m": 25,
+    "peakAlt": 1024,
+    "angleImpact": 85,
+    "dispersion": 36
+  },
+  {
+    "range": 400,
+    "elevation": 1398,
+    "tof": 28.8,
+    "dElevPer100m": 25.5,
+    "peakAlt": 1017,
+    "angleImpact": 84,
+    "dispersion": 37
+  },
+  {
+    "range": 500,
+    "elevation": 1373,
+    "tof": 28.7,
+    "dElevPer100m": 26,
+    "peakAlt": 1010,
+    "angleImpact": 82,
+    "dispersion": 39
+  },
+  {
+    "range": 600,
+    "elevation": 1347,
+    "tof": 28.6,
+    "dElevPer100m": 26.6,
+    "peakAlt": 1003,
+    "angleImpact": 81,
+    "dispersion": 40
+  },
+  {
+    "range": 700,
+    "elevation": 1320,
+    "tof": 28.4,
+    "dElevPer100m": 27.3,
+    "peakAlt": 989,
+    "angleImpact": 79,
+    "dispersion": 42
+  },
+  {
+    "range": 800,
+    "elevation": 1292,
+    "tof": 28.3,
+    "dElevPer100m": 28.1,
+    "peakAlt": 982,
+    "angleImpact": 78,
+    "dispersion": 44
+  },
+  {
+    "range": 900,
+    "elevation": 1261,
+    "tof": 28.1,
+    "dElevPer100m": 29.1,
+    "peakAlt": 968,
+    "angleImpact": 76,
+    "dispersion": 46
+  },
+  {
+    "range": 1000,
+    "elevation": 1227,
+    "tof": 27.9,
+    "dElevPer100m": 30.2,
+    "peakAlt": 954,
+    "angleImpact": 74,
+    "dispersion": 48
+  },
+  {
+    "range": 1100,
+    "elevation": 1193,
+    "tof": 27.6,
+    "dElevPer100m": 31.6,
+    "peakAlt": 934,
+    "angleImpact": 72,
+    "dispersion": 51
+  },
+  {
+    "range": 1200,
+    "elevation": 1157,
+    "tof": 27.3,
+    "dElevPer100m": 33.2,
+    "peakAlt": 914,
+    "angleImpact": 69,
+    "dispersion": 54
+  },
+  {
+    "range": 1300,
+    "elevation": 1119,
+    "tof": 26.9,
+    "dElevPer100m": 35.1,
+    "peakAlt": 887,
+    "angleImpact": 67,
+    "dispersion": 57
+  },
+  {
+    "range": 1400,
+    "elevation": 1079,
+    "tof": 26.4,
+    "dElevPer100m": 37.4,
+    "peakAlt": 854,
+    "angleImpact": 65,
+    "dispersion": 61
+  },
+  {
+    "range": 1500,
+    "elevation": 1037,
+    "tof": 25.8,
+    "dElevPer100m": 40.2,
+    "peakAlt": 816,
+    "angleImpact": 62,
+    "dispersion": 65
+  },
+  {
+    "range": 1600,
+    "elevation": 993,
+    "tof": 25.1,
+    "dElevPer100m": 43.6,
+    "peakAlt": 772,
+    "angleImpact": 60,
+    "dispersion": 70
+  },
+  {
+    "range": 1700,
+    "elevation": 944,
+    "tof": 24.3,
+    "dElevPer100m": 47.9,
+    "peakAlt": 724,
+    "angleImpact": 57,
+    "dispersion": 76
+  },
+  {
+    "range": 1800,
+    "elevation": 888,
+    "tof": 23.3,
+    "dElevPer100m": 53.6,
+    "peakAlt": 665,
+    "angleImpact": 53,
+    "dispersion": 83
+  },
+  {
+    "range": 1900,
+    "elevation": 818,
+    "tof": 22,
+    "dElevPer100m": 62,
+    "peakAlt": 593,
+    "angleImpact": 49,
+    "dispersion": 92
+  },
+  {
+    "range": 2000,
+    "elevation": 760,
+    "tof": 20.1,
+    "dElevPer100m": 74,
+    "peakAlt": 495,
+    "angleImpact": 46,
+    "dispersion": 104
+  }
+];
+
+export const M252_M821_HE_CHARGE_4: BallisticDataPoint[] = [
+  {
+    "range": 400,
+    "elevation": 1415,
+    "tof": 34,
+    "dElevPer100m": 31,
+    "peakAlt": 1417,
+    "angleImpact": 85,
+    "dispersion": 45
+  },
+  {
+    "range": 600,
+    "elevation": 1378,
+    "tof": 33.7,
+    "dElevPer100m": 32,
+    "peakAlt": 1392,
+    "angleImpact": 83,
+    "dispersion": 48
+  },
+  {
+    "range": 800,
+    "elevation": 1338,
+    "tof": 33.3,
+    "dElevPer100m": 33.2,
+    "peakAlt": 1359,
+    "angleImpact": 80,
+    "dispersion": 52
+  },
+  {
+    "range": 1000,
+    "elevation": 1295,
+    "tof": 32.8,
+    "dElevPer100m": 34.8,
+    "peakAlt": 1319,
+    "angleImpact": 78,
+    "dispersion": 56
+  },
+  {
+    "range": 1200,
+    "elevation": 1250,
+    "tof": 32.2,
+    "dElevPer100m": 36.8,
+    "peakAlt": 1271,
+    "angleImpact": 75,
+    "dispersion": 61
+  },
+  {
+    "range": 1400,
+    "elevation": 1202,
+    "tof": 31.5,
+    "dElevPer100m": 39.2,
+    "peakAlt": 1216,
+    "angleImpact": 72,
+    "dispersion": 67
+  },
+  {
+    "range": 1600,
+    "elevation": 1152,
+    "tof": 30.7,
+    "dElevPer100m": 42.2,
+    "peakAlt": 1155,
+    "angleImpact": 69,
+    "dispersion": 74
+  },
+  {
+    "range": 1800,
+    "elevation": 1098,
+    "tof": 29.8,
+    "dElevPer100m": 46,
+    "peakAlt": 1089,
+    "angleImpact": 66,
+    "dispersion": 82
+  },
+  {
+    "range": 2000,
+    "elevation": 1040,
+    "tof": 28.8,
+    "dElevPer100m": 50.8,
+    "peakAlt": 1017,
+    "angleImpact": 62,
+    "dispersion": 91
+  },
+  {
+    "range": 2200,
+    "elevation": 978,
+    "tof": 27.6,
+    "dElevPer100m": 57,
+    "peakAlt": 934,
+    "angleImpact": 59,
+    "dispersion": 102
+  },
+  {
+    "range": 2400,
+    "elevation": 910,
+    "tof": 26.2,
+    "dElevPer100m": 65.2,
+    "peakAlt": 842,
+    "angleImpact": 55,
+    "dispersion": 115
+  },
+  {
+    "range": 2600,
+    "elevation": 834,
+    "tof": 24.5,
+    "dElevPer100m": 76.5,
+    "peakAlt": 736,
+    "angleImpact": 50,
+    "dispersion": 132
+  },
+  {
+    "range": 2800,
+    "elevation": 785,
+    "tof": 23.1,
+    "dElevPer100m": 90,
+    "peakAlt": 654,
+    "angleImpact": 47,
+    "dispersion": 150
+  },
+  {
+    "range": 2900,
+    "elevation": 750,
+    "tof": 22,
+    "dElevPer100m": 102,
+    "peakAlt": 593,
+    "angleImpact": 45,
+    "dispersion": 165
+  }
+];
+
+// ===========================================================================
+// OFFICIAL IN-GAME MANUAL TABLES: SOVIET 2B14 PODNOS 82mm (O-832DU HE)
+// Direct 1:1 transcription from official in-game clipboard instruction sheets
+// ===========================================================================
+
+export const PODNOS_O832DU_HE_CHARGE_0: BallisticDataPoint[] = [
+  {
+    "range": 50,
+    "elevation": 1456,
+    "tof": 15,
+    "dElevPer100m": 11.8,
+    "peakAlt": 276,
+    "angleImpact": 88,
+    "dispersion": 13
+  },
+  {
+    "range": 100,
+    "elevation": 1411,
+    "tof": 15,
+    "dElevPer100m": 12,
+    "peakAlt": 276,
+    "angleImpact": 85,
+    "dispersion": 13
+  },
+  {
+    "range": 150,
+    "elevation": 1365,
+    "tof": 14.9,
+    "dElevPer100m": 12.4,
+    "peakAlt": 272,
+    "angleImpact": 82,
+    "dispersion": 14
+  },
+  {
+    "range": 200,
+    "elevation": 1319,
+    "tof": 14.8,
+    "dElevPer100m": 12.8,
+    "peakAlt": 268,
+    "angleImpact": 79,
+    "dispersion": 14
+  },
+  {
+    "range": 250,
+    "elevation": 1269,
+    "tof": 14.6,
+    "dElevPer100m": 13.3,
+    "peakAlt": 261,
+    "angleImpact": 76,
+    "dispersion": 15
+  },
+  {
+    "range": 300,
+    "elevation": 1218,
+    "tof": 14.4,
+    "dElevPer100m": 13.9,
+    "peakAlt": 254,
+    "angleImpact": 73,
+    "dispersion": 15
+  },
+  {
+    "range": 350,
+    "elevation": 1160,
+    "tof": 14.1,
+    "dElevPer100m": 14.7,
+    "peakAlt": 244,
+    "angleImpact": 70,
+    "dispersion": 16
+  },
+  {
+    "range": 400,
+    "elevation": 1097,
+    "tof": 13.7,
+    "dElevPer100m": 15.8,
+    "peakAlt": 230,
+    "angleImpact": 66,
+    "dispersion": 17
+  },
+  {
+    "range": 450,
+    "elevation": 1025,
+    "tof": 13.2,
+    "dElevPer100m": 17.4,
+    "peakAlt": 214,
+    "angleImpact": 61,
+    "dispersion": 18
+  },
+  {
+    "range": 500,
+    "elevation": 927,
+    "tof": 12.4,
+    "dElevPer100m": 20.2,
+    "peakAlt": 188,
+    "angleImpact": 55,
+    "dispersion": 19
+  }
+];
+
+export const PODNOS_O832DU_HE_CHARGE_1: BallisticDataPoint[] = [
+  {
+    "range": 100,
+    "elevation": 1446,
+    "tof": 19.5,
+    "dElevPer100m": 15.8,
+    "peakAlt": 466,
+    "angleImpact": 87,
+    "dispersion": 18
+  },
+  {
+    "range": 200,
+    "elevation": 1392,
+    "tof": 19.4,
+    "dElevPer100m": 16.3,
+    "peakAlt": 461,
+    "angleImpact": 84,
+    "dispersion": 19
+  },
+  {
+    "range": 300,
+    "elevation": 1336,
+    "tof": 19.2,
+    "dElevPer100m": 17,
+    "peakAlt": 452,
+    "angleImpact": 80,
+    "dispersion": 20
+  },
+  {
+    "range": 400,
+    "elevation": 1276,
+    "tof": 18.9,
+    "dElevPer100m": 17.9,
+    "peakAlt": 438,
+    "angleImpact": 77,
+    "dispersion": 21
+  },
+  {
+    "range": 500,
+    "elevation": 1213,
+    "tof": 18.6,
+    "dElevPer100m": 19,
+    "peakAlt": 424,
+    "angleImpact": 73,
+    "dispersion": 22
+  },
+  {
+    "range": 600,
+    "elevation": 1142,
+    "tof": 18.1,
+    "dElevPer100m": 20.5,
+    "peakAlt": 402,
+    "angleImpact": 69,
+    "dispersion": 24
+  },
+  {
+    "range": 700,
+    "elevation": 1060,
+    "tof": 17.4,
+    "dElevPer100m": 22.5,
+    "peakAlt": 371,
+    "angleImpact": 64,
+    "dispersion": 26
+  },
+  {
+    "range": 800,
+    "elevation": 955,
+    "tof": 16.4,
+    "dElevPer100m": 25.8,
+    "peakAlt": 330,
+    "angleImpact": 57,
+    "dispersion": 29
+  }
+];
+
+export const PODNOS_O832DU_HE_CHARGE_2: BallisticDataPoint[] = [
+  {
+    "range": 200,
+    "elevation": 1432,
+    "tof": 24.8,
+    "dElevPer100m": 19.8,
+    "peakAlt": 754,
+    "angleImpact": 86,
+    "dispersion": 26
+  },
+  {
+    "range": 300,
+    "elevation": 1397,
+    "tof": 24.7,
+    "dElevPer100m": 20.3,
+    "peakAlt": 748,
+    "angleImpact": 84,
+    "dispersion": 27
+  },
+  {
+    "range": 400,
+    "elevation": 1362,
+    "tof": 24.6,
+    "dElevPer100m": 20.8,
+    "peakAlt": 742,
+    "angleImpact": 82,
+    "dispersion": 28
+  },
+  {
+    "range": 500,
+    "elevation": 1326,
+    "tof": 24.4,
+    "dElevPer100m": 21.5,
+    "peakAlt": 730,
+    "angleImpact": 80,
+    "dispersion": 30
+  },
+  {
+    "range": 600,
+    "elevation": 1288,
+    "tof": 24.2,
+    "dElevPer100m": 22.4,
+    "peakAlt": 718,
+    "angleImpact": 77,
+    "dispersion": 31
+  },
+  {
+    "range": 700,
+    "elevation": 1249,
+    "tof": 24,
+    "dElevPer100m": 23.4,
+    "peakAlt": 706,
+    "angleImpact": 75,
+    "dispersion": 33
+  },
+  {
+    "range": 800,
+    "elevation": 1208,
+    "tof": 23.7,
+    "dElevPer100m": 24.6,
+    "peakAlt": 688,
+    "angleImpact": 72,
+    "dispersion": 35
+  },
+  {
+    "range": 900,
+    "elevation": 1163,
+    "tof": 23.3,
+    "dElevPer100m": 26.1,
+    "peakAlt": 665,
+    "angleImpact": 70,
+    "dispersion": 37
+  },
+  {
+    "range": 1000,
+    "elevation": 1115,
+    "tof": 22.9,
+    "dElevPer100m": 27.9,
+    "peakAlt": 643,
+    "angleImpact": 67,
+    "dispersion": 40
+  },
+  {
+    "range": 1100,
+    "elevation": 1062,
+    "tof": 22.3,
+    "dElevPer100m": 30.2,
+    "peakAlt": 609,
+    "angleImpact": 64,
+    "dispersion": 43
+  },
+  {
+    "range": 1200,
+    "elevation": 999,
+    "tof": 21.5,
+    "dElevPer100m": 33.4,
+    "peakAlt": 566,
+    "angleImpact": 60,
+    "dispersion": 47
+  },
+  {
+    "range": 1300,
+    "elevation": 917,
+    "tof": 20.4,
+    "dElevPer100m": 38.4,
+    "peakAlt": 510,
+    "angleImpact": 55,
+    "dispersion": 52
+  },
+  {
+    "range": 1400,
+    "elevation": 765,
+    "tof": 17.8,
+    "dElevPer100m": 47.5,
+    "peakAlt": 388,
+    "angleImpact": 46,
+    "dispersion": 60
+  }
+];
+
+export const PODNOS_O832DU_HE_CHARGE_3: BallisticDataPoint[] = [
+  {
+    "range": 300,
+    "elevation": 1423,
+    "tof": 28.9,
+    "dElevPer100m": 24.8,
+    "peakAlt": 1024,
+    "angleImpact": 85,
+    "dispersion": 36
+  },
+  {
+    "range": 400,
+    "elevation": 1398,
+    "tof": 28.8,
+    "dElevPer100m": 25.3,
+    "peakAlt": 1017,
+    "angleImpact": 84,
+    "dispersion": 37
+  },
+  {
+    "range": 500,
+    "elevation": 1373,
+    "tof": 28.7,
+    "dElevPer100m": 25.8,
+    "peakAlt": 1010,
+    "angleImpact": 82,
+    "dispersion": 39
+  },
+  {
+    "range": 600,
+    "elevation": 1347,
+    "tof": 28.6,
+    "dElevPer100m": 26.4,
+    "peakAlt": 1003,
+    "angleImpact": 81,
+    "dispersion": 40
+  },
+  {
+    "range": 700,
+    "elevation": 1320,
+    "tof": 28.4,
+    "dElevPer100m": 27.1,
+    "peakAlt": 989,
+    "angleImpact": 79,
+    "dispersion": 42
+  },
+  {
+    "range": 800,
+    "elevation": 1292,
+    "tof": 28.3,
+    "dElevPer100m": 28.1,
+    "peakAlt": 982,
+    "angleImpact": 78,
+    "dispersion": 44
+  },
+  {
+    "range": 900,
+    "elevation": 1261,
+    "tof": 28.1,
+    "dElevPer100m": 29.9,
+    "peakAlt": 968,
+    "angleImpact": 76,
+    "dispersion": 46
+  },
+  {
+    "range": 1000,
+    "elevation": 1227,
+    "tof": 27.9,
+    "dElevPer100m": 30,
+    "peakAlt": 954,
+    "angleImpact": 74,
+    "dispersion": 48
+  },
+  {
+    "range": 1100,
+    "elevation": 1193,
+    "tof": 27.6,
+    "dElevPer100m": 31.4,
+    "peakAlt": 934,
+    "angleImpact": 72,
+    "dispersion": 51
+  },
+  {
+    "range": 1200,
+    "elevation": 1157,
+    "tof": 27.3,
+    "dElevPer100m": 33,
+    "peakAlt": 914,
+    "angleImpact": 69,
+    "dispersion": 54
+  },
+  {
+    "range": 1300,
+    "elevation": 1119,
+    "tof": 26.9,
+    "dElevPer100m": 34.9,
+    "peakAlt": 887,
+    "angleImpact": 67,
+    "dispersion": 57
+  },
+  {
+    "range": 1400,
+    "elevation": 1079,
+    "tof": 26.4,
+    "dElevPer100m": 37.1,
+    "peakAlt": 854,
+    "angleImpact": 65,
+    "dispersion": 61
+  },
+  {
+    "range": 1500,
+    "elevation": 1037,
+    "tof": 25.8,
+    "dElevPer100m": 39.9,
+    "peakAlt": 816,
+    "angleImpact": 62,
+    "dispersion": 65
+  },
+  {
+    "range": 1600,
+    "elevation": 993,
+    "tof": 25.1,
+    "dElevPer100m": 43.3,
+    "peakAlt": 772,
+    "angleImpact": 60,
+    "dispersion": 70
+  },
+  {
+    "range": 1700,
+    "elevation": 944,
+    "tof": 24.3,
+    "dElevPer100m": 47.5,
+    "peakAlt": 724,
+    "angleImpact": 57,
+    "dispersion": 76
+  },
+  {
+    "range": 1800,
+    "elevation": 840,
+    "tof": 22,
+    "dElevPer100m": 57,
+    "peakAlt": 593,
+    "angleImpact": 50,
+    "dispersion": 85
+  }
+];
+
+export const PODNOS_O832DU_HE_CHARGE_4: BallisticDataPoint[] = [
+  {
+    "range": 400,
+    "elevation": 1410,
+    "tof": 33.2,
+    "dElevPer100m": 30.8,
+    "peakAlt": 1350,
+    "angleImpact": 85,
+    "dispersion": 45
+  },
+  {
+    "range": 600,
+    "elevation": 1373,
+    "tof": 32.9,
+    "dElevPer100m": 31.8,
+    "peakAlt": 1326,
+    "angleImpact": 82,
+    "dispersion": 48
+  },
+  {
+    "range": 800,
+    "elevation": 1332,
+    "tof": 32.5,
+    "dElevPer100m": 33,
+    "peakAlt": 1294,
+    "angleImpact": 80,
+    "dispersion": 52
+  },
+  {
+    "range": 1000,
+    "elevation": 1288,
+    "tof": 32,
+    "dElevPer100m": 34.6,
+    "peakAlt": 1255,
+    "angleImpact": 77,
+    "dispersion": 56
+  },
+  {
+    "range": 1200,
+    "elevation": 1242,
+    "tof": 31.4,
+    "dElevPer100m": 36.5,
+    "peakAlt": 1208,
+    "angleImpact": 75,
+    "dispersion": 61
+  },
+  {
+    "range": 1400,
+    "elevation": 1192,
+    "tof": 30.7,
+    "dElevPer100m": 38.9,
+    "peakAlt": 1155,
+    "angleImpact": 72,
+    "dispersion": 67
+  },
+  {
+    "range": 1600,
+    "elevation": 1140,
+    "tof": 29.9,
+    "dElevPer100m": 41.8,
+    "peakAlt": 1096,
+    "angleImpact": 68,
+    "dispersion": 74
+  },
+  {
+    "range": 1800,
+    "elevation": 1084,
+    "tof": 28.9,
+    "dElevPer100m": 45.5,
+    "peakAlt": 1024,
+    "angleImpact": 65,
+    "dispersion": 82
+  },
+  {
+    "range": 2000,
+    "elevation": 1022,
+    "tof": 27.8,
+    "dElevPer100m": 50.2,
+    "peakAlt": 948,
+    "angleImpact": 61,
+    "dispersion": 91
+  },
+  {
+    "range": 2200,
+    "elevation": 948,
+    "tof": 26.2,
+    "dElevPer100m": 57.5,
+    "peakAlt": 842,
+    "angleImpact": 57,
+    "dispersion": 102
+  },
+  {
+    "range": 2300,
+    "elevation": 750,
+    "tof": 23.5,
+    "dElevPer100m": 72,
+    "peakAlt": 676,
+    "angleImpact": 45,
+    "dispersion": 118
+  }
+];
+
+// ===========================================================================
+// SPG-9 RECOILLESS RIFLE DIRECT FIRE TABLE
+// ===========================================================================
+
+export const SPG9_PG9V_HEAT_CHARGE_0: BallisticDataPoint[] = [
+  {
+    "range": 200,
+    "elevation": 6,
+    "tof": 0.35,
+    "dElevPer100m": 2
+  },
+  {
+    "range": 400,
+    "elevation": 15,
+    "tof": 0.72,
+    "dElevPer100m": 2.5
+  },
+  {
+    "range": 600,
+    "elevation": 28,
+    "tof": 1.15,
+    "dElevPer100m": 3.2
+  },
+  {
+    "range": 800,
+    "elevation": 46,
+    "tof": 1.62,
+    "dElevPer100m": 4.1
+  },
+  {
+    "range": 1000,
+    "elevation": 70,
+    "tof": 2.15,
+    "dElevPer100m": 5.3
+  },
+  {
+    "range": 1200,
+    "elevation": 102,
+    "tof": 2.76,
+    "dElevPer100m": 6.8
+  },
+  {
+    "range": 1300,
+    "elevation": 120,
+    "tof": 3.1,
+    "dElevPer100m": 7.8
+  }
+];
 
 export const WEAPONS: WeaponConfig[] = [
   {
@@ -10,139 +1189,47 @@ export const WEAPONS: WeaponConfig[] = [
     milsPerCircle: 6400,
     minElevation: 800, // 45.0°
     maxElevation: 1511, // 85.0°
-    description: 'American standard smoothbore battalion mortar. High-trajectory indirect fire from 75m to 4,500m using 0 to 4 propellant charge rings and M67 sight unit.',
+    description: 'American standard smoothbore battalion mortar. High-trajectory indirect fire from 50m to 2,900m using 0 to 4 propellant charge rings and M67 sight unit.',
     charges: [
       {
         charge: 0,
         name: '0 Rings (Charge 0)',
-        minRange: 75,
-        maxRange: 480,
+        minRange: 50,
+        maxRange: 500,
         muzzleVelocity: 68,
-        table: [
-          { range: 75, elevation: 1511, tof: 12.8 },
-          { range: 100, elevation: 1495, tof: 12.7 },
-          { range: 125, elevation: 1472, tof: 12.6 },
-          { range: 150, elevation: 1445, tof: 12.5 },
-          { range: 175, elevation: 1420, tof: 12.4 },
-          { range: 200, elevation: 1394, tof: 12.3 },
-          { range: 225, elevation: 1367, tof: 12.1 },
-          { range: 250, elevation: 1338, tof: 12.0 },
-          { range: 275, elevation: 1309, tof: 11.8 },
-          { range: 300, elevation: 1278, tof: 11.6 },
-          { range: 325, elevation: 1245, tof: 11.4 },
-          { range: 350, elevation: 1209, tof: 11.1 },
-          { range: 375, elevation: 1169, tof: 10.8 },
-          { range: 400, elevation: 1125, tof: 10.4 },
-          { range: 425, elevation: 1072, tof: 10.0 },
-          { range: 450, elevation: 1004, tof: 9.4 },
-          { range: 465, elevation: 938, tof: 8.8 },
-          { range: 480, elevation: 800, tof: 7.9 },
-        ],
+        table: M252_M821_HE_CHARGE_0,
       },
       {
         charge: 1,
         name: '1 Ring (Charge 1)',
-        minRange: 200,
-        maxRange: 1080,
+        minRange: 100,
+        maxRange: 800,
         muzzleVelocity: 105,
-        table: [
-          { range: 200, elevation: 1505, tof: 20.2 },
-          { range: 250, elevation: 1482, tof: 20.1 },
-          { range: 300, elevation: 1456, tof: 19.9 },
-          { range: 350, elevation: 1432, tof: 19.7 },
-          { range: 400, elevation: 1406, tof: 19.5 },
-          { range: 450, elevation: 1380, tof: 19.3 },
-          { range: 500, elevation: 1353, tof: 19.0 },
-          { range: 550, elevation: 1324, tof: 18.7 },
-          { range: 600, elevation: 1294, tof: 18.3 },
-          { range: 650, elevation: 1263, tof: 17.9 },
-          { range: 700, elevation: 1230, tof: 17.5 },
-          { range: 750, elevation: 1195, tof: 17.0 },
-          { range: 800, elevation: 1156, tof: 16.5 },
-          { range: 850, elevation: 1113, tof: 15.8 },
-          { range: 900, elevation: 1065, tof: 15.1 },
-          { range: 950, elevation: 1008, tof: 14.3 },
-          { range: 1000, elevation: 932, tof: 13.3 },
-          { range: 1040, elevation: 875, tof: 12.3 },
-          { range: 1080, elevation: 800, tof: 11.1 },
-        ],
+        table: M252_M821_HE_CHARGE_1,
       },
       {
         charge: 2,
         name: '2 Rings (Charge 2)',
-        minRange: 400,
-        maxRange: 2050,
+        minRange: 200,
+        maxRange: 1400,
         muzzleVelocity: 145,
-        table: [
-          { range: 400, elevation: 1500, tof: 27.8 },
-          { range: 500, elevation: 1476, tof: 27.6 },
-          { range: 600, elevation: 1449, tof: 27.3 },
-          { range: 700, elevation: 1423, tof: 27.0 },
-          { range: 800, elevation: 1396, tof: 26.7 },
-          { range: 900, elevation: 1368, tof: 26.3 },
-          { range: 1000, elevation: 1339, tof: 25.9 },
-          { range: 1100, elevation: 1309, tof: 25.4 },
-          { range: 1200, elevation: 1278, tof: 24.9 },
-          { range: 1300, elevation: 1244, tof: 24.3 },
-          { range: 1400, elevation: 1209, tof: 23.7 },
-          { range: 1500, elevation: 1171, tof: 22.9 },
-          { range: 1600, elevation: 1129, tof: 22.0 },
-          { range: 1700, elevation: 1082, tof: 21.0 },
-          { range: 1800, elevation: 1026, tof: 19.9 },
-          { range: 1900, elevation: 955, tof: 18.4 },
-          { range: 2000, elevation: 859, tof: 16.4 },
-          { range: 2050, elevation: 800, tof: 14.9 },
-        ],
+        table: M252_M821_HE_CHARGE_2,
       },
       {
         charge: 3,
         name: '3 Rings (Charge 3)',
-        minRange: 650,
-        maxRange: 3200,
+        minRange: 300,
+        maxRange: 2000,
         muzzleVelocity: 182,
-        table: [
-          { range: 650, elevation: 1495, tof: 34.8 },
-          { range: 800, elevation: 1472, tof: 34.5 },
-          { range: 1000, elevation: 1438, tof: 34.1 },
-          { range: 1200, elevation: 1405, tof: 33.6 },
-          { range: 1400, elevation: 1369, tof: 33.0 },
-          { range: 1600, elevation: 1333, tof: 32.2 },
-          { range: 1800, elevation: 1294, tof: 31.4 },
-          { range: 2000, elevation: 1253, tof: 30.5 },
-          { range: 2200, elevation: 1209, tof: 29.4 },
-          { range: 2400, elevation: 1160, tof: 28.1 },
-          { range: 2600, elevation: 1104, tof: 26.7 },
-          { range: 2800, elevation: 1036, tof: 25.0 },
-          { range: 3000, elevation: 942, tof: 22.6 },
-          { range: 3100, elevation: 878, tof: 20.8 },
-          { range: 3200, elevation: 800, tof: 18.6 },
-        ],
+        table: M252_M821_HE_CHARGE_3,
       },
       {
         charge: 4,
         name: '4 Rings (Charge 4)',
-        minRange: 950,
-        maxRange: 4500,
+        minRange: 400,
+        maxRange: 2900,
         muzzleVelocity: 220,
-        table: [
-          { range: 950, elevation: 1492, tof: 42.0 },
-          { range: 1150, elevation: 1468, tof: 41.6 },
-          { range: 1400, elevation: 1436, tof: 41.1 },
-          { range: 1650, elevation: 1405, tof: 40.5 },
-          { range: 1900, elevation: 1372, tof: 39.9 },
-          { range: 2150, elevation: 1338, tof: 39.1 },
-          { range: 2400, elevation: 1301, tof: 38.2 },
-          { range: 2650, elevation: 1263, tof: 37.2 },
-          { range: 2900, elevation: 1221, tof: 36.0 },
-          { range: 3150, elevation: 1176, tof: 34.6 },
-          { range: 3400, elevation: 1125, tof: 33.0 },
-          { range: 3650, elevation: 1068, tof: 31.1 },
-          { range: 3900, elevation: 999, tof: 28.8 },
-          { range: 4100, elevation: 932, tof: 26.5 },
-          { range: 4300, elevation: 852, tof: 23.8 },
-          { range: 4400, elevation: 805, tof: 22.0 },
-          { range: 4500, elevation: 800, tof: 21.6 },
-        ],
+        table: M252_M821_HE_CHARGE_4,
       },
     ],
   },
@@ -155,141 +1242,47 @@ export const WEAPONS: WeaponConfig[] = [
     milsPerCircle: 6000,
     minElevation: 750, // 45.0° (07-50)
     maxElevation: 1417, // 85.0° (14-17)
-    description: 'Soviet/Russian light battalion mortar. High trajectory fire from 80m to 4,250m using 0 to 4 additional ring charges and 60-00 Warsaw Pact sight graduations.',
+    description: 'Soviet/Russian light battalion mortar. High trajectory fire from 50m to 2,300m using 0 to 4 additional ring charges and 60-00 Warsaw Pact sight graduations.',
     charges: [
       {
         charge: 0,
         name: '0 Rings (Charge 0)',
-        minRange: 80,
-        maxRange: 470,
+        minRange: 50,
+        maxRange: 500,
         muzzleVelocity: 70,
-        table: [
-          { range: 80, elevation: 1417, tof: 12.2 },
-          { range: 100, elevation: 1397, tof: 12.1 },
-          { range: 125, elevation: 1371, tof: 12.0 },
-          { range: 150, elevation: 1343, tof: 11.8 },
-          { range: 175, elevation: 1316, tof: 11.6 },
-          { range: 200, elevation: 1288, tof: 11.4 },
-          { range: 225, elevation: 1259, tof: 11.2 },
-          { range: 250, elevation: 1228, tof: 11.0 },
-          { range: 275, elevation: 1196, tof: 10.7 },
-          { range: 300, elevation: 1163, tof: 10.4 },
-          { range: 325, elevation: 1127, tof: 10.1 },
-          { range: 350, elevation: 1088, tof: 9.8 },
-          { range: 375, elevation: 1046, tof: 9.4 },
-          { range: 400, elevation: 997, tof: 8.9 },
-          { range: 425, elevation: 938, tof: 8.3 },
-          { range: 450, elevation: 858, tof: 7.6 },
-          { range: 460, elevation: 810, tof: 7.2 },
-          { range: 470, elevation: 750, tof: 6.8 },
-        ],
+        table: PODNOS_O832DU_HE_CHARGE_0,
       },
       {
         charge: 1,
         name: '1 Ring (Charge 1)',
-        minRange: 220,
-        maxRange: 1150,
+        minRange: 100,
+        maxRange: 800,
         muzzleVelocity: 110,
-        table: [
-          { range: 220, elevation: 1408, tof: 19.4 },
-          { range: 260, elevation: 1391, tof: 19.3 },
-          { range: 300, elevation: 1373, tof: 19.1 },
-          { range: 350, elevation: 1351, tof: 18.9 },
-          { range: 400, elevation: 1328, tof: 18.7 },
-          { range: 450, elevation: 1305, tof: 18.5 },
-          { range: 500, elevation: 1280, tof: 18.2 },
-          { range: 550, elevation: 1255, tof: 17.9 },
-          { range: 600, elevation: 1228, tof: 17.5 },
-          { range: 650, elevation: 1201, tof: 17.2 },
-          { range: 700, elevation: 1172, tof: 16.8 },
-          { range: 750, elevation: 1141, tof: 16.4 },
-          { range: 800, elevation: 1107, tof: 15.9 },
-          { range: 850, elevation: 1071, tof: 15.3 },
-          { range: 900, elevation: 1030, tof: 14.7 },
-          { range: 950, elevation: 983, tof: 14.0 },
-          { range: 1000, elevation: 928, tof: 13.1 },
-          { range: 1050, elevation: 860, tof: 12.1 },
-          { range: 1100, elevation: 800, tof: 11.2 },
-          { range: 1150, elevation: 750, tof: 10.2 },
-        ],
+        table: PODNOS_O832DU_HE_CHARGE_1,
       },
       {
         charge: 2,
         name: '2 Rings (Charge 2)',
-        minRange: 420,
-        maxRange: 2100,
+        minRange: 200,
+        maxRange: 1400,
         muzzleVelocity: 150,
-        table: [
-          { range: 420, elevation: 1403, tof: 26.8 },
-          { range: 500, elevation: 1383, tof: 26.6 },
-          { range: 600, elevation: 1360, tof: 26.4 },
-          { range: 700, elevation: 1336, tof: 26.1 },
-          { range: 800, elevation: 1310, tof: 25.8 },
-          { range: 900, elevation: 1284, tof: 25.4 },
-          { range: 1000, elevation: 1257, tof: 25.0 },
-          { range: 1100, elevation: 1229, tof: 24.5 },
-          { range: 1200, elevation: 1200, tof: 24.0 },
-          { range: 1300, elevation: 1169, tof: 23.4 },
-          { range: 1400, elevation: 1137, tof: 22.8 },
-          { range: 1500, elevation: 1102, tof: 22.0 },
-          { range: 1600, elevation: 1063, tof: 21.2 },
-          { range: 1700, elevation: 1021, tof: 20.2 },
-          { range: 1800, elevation: 973, tof: 19.1 },
-          { range: 1900, elevation: 914, tof: 17.7 },
-          { range: 2000, elevation: 835, tof: 15.9 },
-          { range: 2050, elevation: 790, tof: 14.8 },
-          { range: 2100, elevation: 750, tof: 14.0 },
-        ],
+        table: PODNOS_O832DU_HE_CHARGE_2,
       },
       {
         charge: 3,
         name: '3 Rings (Charge 3)',
-        minRange: 650,
-        maxRange: 3100,
+        minRange: 300,
+        maxRange: 1800,
         muzzleVelocity: 185,
-        table: [
-          { range: 650, elevation: 1398, tof: 33.8 },
-          { range: 800, elevation: 1378, tof: 33.5 },
-          { range: 1000, elevation: 1342, tof: 33.1 },
-          { range: 1200, elevation: 1309, tof: 32.6 },
-          { range: 1400, elevation: 1273, tof: 32.0 },
-          { range: 1600, elevation: 1236, tof: 31.3 },
-          { range: 1800, elevation: 1197, tof: 30.4 },
-          { range: 2000, elevation: 1156, tof: 29.4 },
-          { range: 2200, elevation: 1113, tof: 28.3 },
-          { range: 2400, elevation: 1064, tof: 27.0 },
-          { range: 2600, elevation: 1008, tof: 25.5 },
-          { range: 2800, elevation: 938, tof: 23.6 },
-          { range: 2950, elevation: 858, tof: 21.4 },
-          { range: 3050, elevation: 795, tof: 19.5 },
-          { range: 3100, elevation: 750, tof: 18.2 },
-        ],
+        table: PODNOS_O832DU_HE_CHARGE_3,
       },
       {
         charge: 4,
-        name: '4 Rings (Charge 4)',
-        minRange: 950,
-        maxRange: 4250,
+        name: '4 Long Range (Charge 4)',
+        minRange: 400,
+        maxRange: 2300,
         muzzleVelocity: 215,
-        table: [
-          { range: 950, elevation: 1392, tof: 40.5 },
-          { range: 1150, elevation: 1371, tof: 40.1 },
-          { range: 1400, elevation: 1337, tof: 39.6 },
-          { range: 1650, elevation: 1306, tof: 39.0 },
-          { range: 1900, elevation: 1272, tof: 38.3 },
-          { range: 2150, elevation: 1237, tof: 37.5 },
-          { range: 2400, elevation: 1200, tof: 36.5 },
-          { range: 2650, elevation: 1162, tof: 35.4 },
-          { range: 2900, elevation: 1120, tof: 34.1 },
-          { range: 3150, elevation: 1075, tof: 32.7 },
-          { range: 3400, elevation: 1023, tof: 31.0 },
-          { range: 3600, elevation: 977, tof: 29.4 },
-          { range: 3800, elevation: 923, tof: 27.5 },
-          { range: 4000, elevation: 852, tof: 25.1 },
-          { range: 4100, elevation: 810, tof: 23.4 },
-          { range: 4200, elevation: 770, tof: 21.6 },
-          { range: 4250, elevation: 750, tof: 20.5 },
-        ],
+        table: PODNOS_O832DU_HE_CHARGE_4,
       },
     ],
   },
@@ -310,156 +1303,30 @@ export const WEAPONS: WeaponConfig[] = [
         minRange: 100,
         maxRange: 1300,
         muzzleVelocity: 435,
-        table: [
-          { range: 200, elevation: 6, tof: 0.35 },
-          { range: 400, elevation: 15, tof: 0.72 },
-          { range: 600, elevation: 28, tof: 1.15 },
-          { range: 800, elevation: 46, tof: 1.62 },
-          { range: 1000, elevation: 70, tof: 2.15 },
-          { range: 1200, elevation: 102, tof: 2.76 },
-          { range: 1300, elevation: 120, tof: 3.10 },
-        ],
+        table: SPG9_PG9V_HEAT_CHARGE_0,
       },
     ],
   },
 ];
 
+/**
+ * Universal ballistic solution entry point (routes to precision calculator engine)
+ */
 export function calculateFiringSolution(
   weapon: WeaponConfig,
   gunPos: { x: number; z: number; alt: number },
   targetPos: { x: number; z: number; alt: number },
   preferredCharge?: number
 ): BallisticSolution {
-  const dx = targetPos.x - gunPos.x;
-  const dz = targetPos.z - gunPos.z;
-  const dH = targetPos.alt - gunPos.alt;
-
-  const horizontalDistance = Math.sqrt(dx * dx + dz * dz);
-  const slantDistance = Math.sqrt(horizontalDistance * horizontalDistance + dH * dH);
-
-  // Azimuth calculation
-  // In Arma Reforger: Z is North (0°), X is East (90°)
-  let angleRad = Math.atan2(dx, dz);
-  if (angleRad < 0) {
-    angleRad += 2 * Math.PI;
-  }
-  const azimuthDeg = (angleRad * 180) / Math.PI;
-  const azimuthMils = (angleRad / (2 * Math.PI)) * weapon.milsPerCircle;
-
-  // Determine automatic optimal charge ring (0..4)
-  let recommendedCharge = 0;
-  const suitableCharges = weapon.charges
-    .map((c, i) => ({ c, i }))
-    .filter(({ c }) => horizontalDistance >= c.minRange && horizontalDistance <= c.maxRange);
-
-  if (suitableCharges.length > 0) {
-    // If the lowest charge is on the extreme upper edge (> 96% of maxRange)
-    // and the next charge covers it with comfortable elevation headroom, pick the next charge
-    if (
-      suitableCharges.length > 1 &&
-      horizontalDistance > suitableCharges[0].c.maxRange * 0.96 &&
-      horizontalDistance >= suitableCharges[1].c.minRange + 30
-    ) {
-      recommendedCharge = suitableCharges[1].i;
-    } else {
-      recommendedCharge = suitableCharges[0].i;
-    }
-  } else {
-    // Target outside all charge bounds - select closest boundary
-    if (horizontalDistance < weapon.charges[0].minRange) {
-      recommendedCharge = 0;
-    } else {
-      recommendedCharge = weapon.charges.length - 1;
-    }
-  }
-
-  // Active charge selection: use preferred if explicitly passed, otherwise use recommended
-  let activeChargeIdx = recommendedCharge;
-  if (preferredCharge !== undefined && preferredCharge >= 0 && weapon.charges[preferredCharge]) {
-    activeChargeIdx = preferredCharge;
-  }
-
-  const selectedChargeObj = weapon.charges[activeChargeIdx] || weapon.charges[0];
-  const table = selectedChargeObj.table;
-  const inRange = horizontalDistance >= selectedChargeObj.minRange && horizontalDistance <= selectedChargeObj.maxRange;
-
-  let elevationMils: number | null = null;
-  let elevationDeg: number | null = null;
-  let timeOfFlight: number | null = null;
-  let warning: string | undefined;
-
-  if (!inRange) {
-    if (horizontalDistance < selectedChargeObj.minRange) {
-      warning = `Target under min range (${Math.round(selectedChargeObj.minRange)}m) for Ring ${activeChargeIdx}`;
-    } else {
-      warning = `Target beyond max range (${Math.round(selectedChargeObj.maxRange)}m) for Ring ${activeChargeIdx}`;
-    }
-  }
-
-  // High-precision linear interpolation across calibrated firing table
-  if (table.length >= 2) {
-    let lower = table[0];
-    let upper = table[table.length - 1];
-
-    for (let i = 0; i < table.length - 1; i++) {
-      if (horizontalDistance >= table[i].range && horizontalDistance <= table[i + 1].range) {
-        lower = table[i];
-        upper = table[i + 1];
-        break;
-      }
-    }
-
-    const t = upper.range === lower.range ? 0 : (horizontalDistance - lower.range) / (upper.range - lower.range);
-    const baseElevMils = lower.elevation + t * (upper.elevation - lower.elevation);
-    const baseTof = lower.tof + t * (upper.tof - lower.tof);
-
-    // Height difference correction for mortar high-angle fire
-    // When target is higher than gun (dH > 0), tube angle must be depressed slightly (lower mils)
-    // When target is lower than gun (dH < 0), tube angle is elevated slightly (higher mils)
-    const radToMils = weapon.milsPerCircle / (2 * Math.PI);
-    const slopeCorrectionMils = horizontalDistance > 0 ? (Math.atan(dH / horizontalDistance) * radToMils) : 0;
-
-    const correctedElevMils = weapon.id.includes('spg9') 
-      ? baseElevMils + slopeCorrectionMils 
-      : baseElevMils - slopeCorrectionMils * 0.95;
-
-    // Check tube angle physical limits
-    if (correctedElevMils > weapon.maxElevation) {
-      warning = `Tube elevation exceeds physical limit (${Math.round(correctedElevMils)} mils > ${weapon.maxElevation} mils)`;
-    } else if (correctedElevMils < weapon.minElevation) {
-      warning = `Tube elevation below physical limit (${Math.round(correctedElevMils)} mils < ${weapon.minElevation} mils)`;
-    }
-
-    // Convert mils to elevation degrees based on specific weapon milsPerCircle
-    const degPerMil = 360 / weapon.milsPerCircle;
-    const computedDeg = correctedElevMils * degPerMil;
-
-    elevationMils = Math.round(correctedElevMils);
-    elevationDeg = Math.round(computedDeg * 10) / 10;
-    timeOfFlight = Math.round(baseTof * 10) / 10;
-  }
-
-  return {
-    horizontalDistance: Math.round(horizontalDistance),
-    slantDistance: Math.round(slantDistance),
-    heightDifference: Math.round(dH),
-    azimuthDeg: Math.round(azimuthDeg * 10) / 10,
-    azimuthMils: Math.round(azimuthMils),
-    charge: activeChargeIdx,
-    recommendedCharge,
-    elevationMils,
-    elevationDeg,
-    timeOfFlight,
-    inRange,
-    warning,
-    ammoType: weapon.caliber,
-  };
+  return solveMortarFireMission({
+    weapon,
+    gunPos,
+    targetPos,
+    preferredCharge,
+  });
 }
 
 export function formatGridCoord(x: number, z: number, digits: 6 | 8 = 6): string {
-  // Arma Reforger grid format:
-  // 6 digits: XXX ZZZ (100m grid cell)
-  // 8 digits: XXXX ZZZZ (10m grid cell)
   const padLen = digits / 2;
   const factor = digits === 6 ? 100 : 10;
 

@@ -87,7 +87,10 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
           : `${solution.elevationMils}`)
       : 'OUT OF RANGE';
 
-    const text = `[FIRE MISSION - ${terrain.name.toUpperCase()}] ${selectedWeapon.name} (${solution.ammoType}) | RING: ${solution.charge} | AZ: ${azMilStr} mils (${solution.azimuthDeg}°) | EL: ${elevMilStr} mils (${solution.elevationDeg ?? '--'}°) | RNG: ${solution.horizontalDistance}m (ΔH: ${solution.heightDifference >= 0 ? '+' : ''}${solution.heightDifference}m) | TOF: ${solution.timeOfFlight || 0}s | GUN: ${formatGridCoord(gunPos.x, gunPos.z, 6)} | TGT: ${formatGridCoord(targetPos.x, targetPos.z, 6)}`;
+    const ysStr = solution.peakAlt ? ` | Ys: ${solution.peakAlt}m` : '';
+    const dhwStr = solution.dElevPer100m ? ` | ΔHw: ${solution.dElevPer100m}` : '';
+
+    const text = `[FIRE MISSION - ${terrain.name.toUpperCase()}] ${selectedWeapon.name} (${solution.ammoType}) | RING: ${solution.charge} | AZ: ${azMilStr} mils (${solution.azimuthDeg}°) | EL: ${elevMilStr} mils (${solution.elevationDeg ?? '--'}°) | RNG: ${solution.horizontalDistance}m (ΔH: ${solution.heightDifference >= 0 ? '+' : ''}${solution.heightDifference}m) | TOF: ${solution.timeOfFlight || 0}s${ysStr}${dhwStr} | GUN: ${formatGridCoord(gunPos.x, gunPos.z, 6)} | TGT: ${formatGridCoord(targetPos.x, targetPos.z, 6)}`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -310,6 +313,22 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                 {solution.heightDifference >= 0 ? `+${solution.heightDifference}` : solution.heightDifference} m
               </div>
               <div className="text-[9px] text-slate-500">Tgt - Gun</div>
+            </div>
+          </div>
+
+          {/* Tertiary Tactical Parameters: Peak Alt (Ys), Delta Hw, Impact Angle */}
+          <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-800/40 text-center font-mono text-[10px]">
+            <div className="bg-slate-900/50 p-1 rounded">
+              <span className="text-[8px] text-slate-500 block uppercase">Peak Alt (Ys)</span>
+              <span className="font-bold text-sky-300">{solution.peakAlt ? `${solution.peakAlt}m` : '---'}</span>
+            </div>
+            <div className="bg-slate-900/50 p-1 rounded">
+              <span className="text-[8px] text-slate-500 block uppercase">ΔHw (per 100m)</span>
+              <span className="font-bold text-emerald-300">{solution.dElevPer100m ? `${solution.dElevPer100m} mil` : '---'}</span>
+            </div>
+            <div className="bg-slate-900/50 p-1 rounded">
+              <span className="text-[8px] text-slate-500 block uppercase">Impact Angle</span>
+              <span className="font-bold text-slate-300">{solution.angleImpact ? `${solution.angleImpact}°` : '---'}</span>
             </div>
           </div>
 

@@ -33,18 +33,23 @@ export interface TerrainConfig {
 
 export type MilSystem = 'NATO' | 'SOVIET';
 
+export interface BallisticDataPoint {
+  range: number;
+  elevation: number;
+  tof: number;
+  dElevPer100m?: number; // Delta H_w (elevation change per 100m target altitude difference)
+  peakAlt?: number; // Y_s (Peak Altitude in meters)
+  angleImpact?: number; // Impact angle in degrees
+  dispersion?: number; // meters
+}
+
 export interface WeaponCharge {
   charge: number;
   name: string;
   minRange: number; // meters
   maxRange: number; // meters
   muzzleVelocity: number; // m/s
-  // Table entries: range (m) -> elevation (mils), time of flight (s)
-  table: Array<{
-    range: number;
-    elevation: number;
-    tof: number;
-  }>;
+  table: BallisticDataPoint[];
 }
 
 export interface WeaponConfig {
@@ -71,6 +76,9 @@ export interface BallisticSolution {
   elevationMils: number | null; // calculated elevation in mils
   elevationDeg: number | null; // calculated elevation in degrees
   timeOfFlight: number | null; // seconds
+  peakAlt?: number | null; // Y_s (Peak altitude in meters)
+  dElevPer100m?: number | null; // Delta H_w
+  angleImpact?: number | null; // Impact angle in degrees
   inRange: boolean;
   warning?: string;
   ammoType: string;
