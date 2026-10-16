@@ -69,6 +69,32 @@ describe('Map Coordinate System (L.CRS.Simple & Game Meters)', () => {
     expect(distance).toBeCloseTo(960.83, 1);
   });
 
+  it('calculates verified true-ground distances between known in-game POIs', () => {
+    // Montignac to Entre Deux (Known Everon town center coordinates)
+    const montignac = { x: 4775.641, z: 7086.945 };
+    const entreDeux = { x: 5760.571, z: 7061.821 };
+    const distMontignacEntreDeux = Math.sqrt(
+      Math.pow(entreDeux.x - montignac.x, 2) + Math.pow(entreDeux.z - montignac.z, 2)
+    );
+    expect(distMontignacEntreDeux).toBeCloseTo(985.25, 1);
+
+    // Morton to Coastal Base Morton
+    const morton = { x: 5137.254, z: 4009.941 };
+    const coastalBaseMorton = { x: 4956.796, z: 3875.627 };
+    const distMorton = Math.sqrt(
+      Math.pow(coastalBaseMorton.x - morton.x, 2) + Math.pow(coastalBaseMorton.z - morton.z, 2)
+    );
+    expect(distMorton).toBeCloseTo(224.96, 1);
+
+    // St Phillipe to Airport
+    const stPhillipe = { x: 4500.872, z: 10776.053 };
+    const airport = { x: 4893.46, z: 11800.709 };
+    const distAirport = Math.sqrt(
+      Math.pow(airport.x - stPhillipe.x, 2) + Math.pow(airport.z - stPhillipe.z, 2)
+    );
+    expect(distAirport).toBeCloseTo(1097.29, 1);
+  });
+
   it('Section 7.4: Zooming and panning 5 times does not shift marker coordinates by even 0.01m', () => {
     const crs = createTerrainCRS(TERRAINS.everon);
     const gunInitial = { x: 4800.0, z: 7100.0 };

@@ -9,6 +9,13 @@ export interface InterpolatedBallistics {
   angleImpact: number;
   dispersion: number;
   isExact: boolean;
+  inputs?: {
+    r1: number;
+    r2: number;
+    e1: number;
+    e2: number;
+    fraction: number;
+  };
 }
 
 export interface CalculateSolutionOptions {
@@ -42,6 +49,13 @@ export function interpolateBallistics(
       dHw: -Math.abs(dElev),
       angleImpact: exact.angleImpact ?? (exact.elevation * (360 / 6400)),
       dispersion: exact.dispersion ?? 40.0,
+      inputs: {
+        r1: exact.range,
+        r2: exact.range,
+        e1: exact.elevation,
+        e2: exact.elevation,
+        fraction: 0,
+      },
       isExact: true,
     };
   }
@@ -71,6 +85,13 @@ export function interpolateBallistics(
           dHw: -Math.abs(dElev),
           angleImpact: p1.angleImpact ?? 70,
           dispersion: p1.dispersion ?? 40,
+          inputs: {
+            r1: p1.range,
+            r2: p2.range,
+            e1: p1.elevation,
+            e2: p2.elevation,
+            fraction: 0,
+          },
           isExact: true,
         };
       }
@@ -99,6 +120,13 @@ export function interpolateBallistics(
         dHw: -Math.abs(dElevInterp),
         angleImpact: p1Angle + (p2Angle - p1Angle) * t,
         dispersion: p1Disp + (p2Disp - p1Disp) * t,
+        inputs: {
+          r1: p1.range,
+          r2: p2.range,
+          e1: p1.elevation,
+          e2: p2.elevation,
+          fraction: Math.round(t * 1000) / 1000,
+        },
         isExact: false,
       };
     }

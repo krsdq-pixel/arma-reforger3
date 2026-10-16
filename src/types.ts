@@ -61,6 +61,8 @@ export interface AmmoConfig {
   weightKg: number;
   description: string;
   charges: WeaponCharge[];
+  isVerified?: boolean;
+  verificationNote?: string;
 }
 
 export interface WeaponCharge {
@@ -86,6 +88,38 @@ export interface WeaponConfig {
   description: string;
 }
 
+export interface BallisticDiagnosticInfo {
+  mortarPos: { x: number; z: number; alt: number };
+  targetPos: { x: number; z: number; alt: number };
+  horizontalDistance: number;
+  slantDistance: number;
+  heightDifference: number;
+  azimuthDeg: number;
+  azimuthMils: number;
+  mortarName: string;
+  milSystem: MilSystem;
+  milsPerCircle: number;
+  ammoName: string;
+  ammoWeightKg?: number;
+  chargeRing: number;
+  chargeBracket: { min: number; max: number };
+  sourceTableEntry?: { range: number; elevation: number; tof: number; dElev?: number } | null;
+  interpolationInputs?: {
+    r1: number;
+    r2: number;
+    e1: number;
+    e2: number;
+    fraction: number;
+  } | null;
+  calculatedElevationMils: number | null;
+  calculatedElevationDeg: number | null;
+  calculatedFlightTime: number | null;
+  predictedImpactPos: { x: number; z: number } | null;
+  predictedImpactDistance: number | null;
+  impactErrorMeters: number | null;
+  tableVerificationStatus: 'VERIFIED_IN_GAME' | 'STANDARD_PROFILE' | 'UNVERIFIED';
+}
+
 export interface BallisticSolution {
   horizontalDistance: number; // meters
   slantDistance: number; // meters
@@ -106,6 +140,11 @@ export interface BallisticSolution {
   ammoId?: string;
   ammoWeightKg?: number;
   ammoCategory?: AmmoCategory;
+  predictedImpactPos?: { x: number; z: number } | null;
+  predictedImpactDistance?: number | null;
+  impactErrorMeters?: number | null;
+  tableVerificationStatus?: 'VERIFIED_IN_GAME' | 'STANDARD_PROFILE' | 'UNVERIFIED';
+  ballisticDiagnostics?: BallisticDiagnosticInfo;
 }
 
 export interface TileDiagnostics {
