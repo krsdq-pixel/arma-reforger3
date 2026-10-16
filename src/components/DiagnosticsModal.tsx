@@ -210,6 +210,20 @@ export const DiagnosticsModal: React.FC<DiagnosticsModalProps> = ({
             </div>
           </div>
 
+          {/* Tile Host & License Status */}
+          <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+            <div className="text-slate-500 text-[10px] uppercase mb-1">Tile Host & License Status</div>
+            <div className="text-[11px] text-slate-200 flex items-center justify-between">
+              <span className="font-semibold">{terrain.tileHost || 'enfumap.com'}</span>
+              <span className="text-[10px] bg-amber-950/60 border border-amber-600/50 text-amber-400 px-2 py-0.5 rounded font-mono">
+                NOT VERIFIED
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-400 mt-1">
+              Attribution: {terrain.attribution || '© Bohemia Interactive a.s.'} — Note: Public CDN tile endpoint availability and license permission have not been verified.
+            </div>
+          </div>
+
           {/* Active URL Template */}
           <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800">
             <div className="text-slate-500 text-[10px] uppercase mb-1">Configured Tile Template ({activeLayer})</div>

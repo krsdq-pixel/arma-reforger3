@@ -12,8 +12,10 @@ export default function App() {
   const [activeTerrainId, setActiveTerrainId] = useState<TerrainId>('everon');
   const [activeLayer, setActiveLayer] = useState<MapLayerType>('topo');
   const [selectedWeapon, setSelectedWeapon] = useState<WeaponConfig>(WEAPONS[0]);
+  const [selectedAmmoId, setSelectedAmmoId] = useState<string>('M821_HE');
   const [selectedCharge, setSelectedCharge] = useState<number>(-1); // -1 = Auto optimal ring
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
+  const [terrainNotice, setTerrainNotice] = useState<string | null>(null);
 
   const currentTerrain = TERRAINS[activeTerrainId];
 
@@ -46,22 +48,37 @@ export default function App() {
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Switch terrain
+  // Switch weapon and reset charge to Auto and ammo to default for that weapon
+  const handleSelectWeapon = useCallback((weapon: WeaponConfig) => {
+    setSelectedWeapon(weapon);
+    setSelectedCharge(-1);
+    if (weapon.ammunition && weapon.ammunition.length > 0) {
+      setSelectedAmmoId(weapon.ammunition[0].id);
+    }
+  }, []);
+
+  // Switch terrain (Section 6.4: Keep stored game coordinates if inside new terrain bounds)
   const handleSelectTerrain = (id: TerrainId) => {
     setActiveTerrainId(id);
     const newTerrain = TERRAINS[id];
     
-    // Reset positions to new map default points of interest
-    setGunPos({
-      x: newTerrain.defaultWeapon[0],
-      z: newTerrain.defaultWeapon[1],
-      alt: 50,
-    });
-    setTargetPos({
-      x: newTerrain.defaultTarget[0],
-      z: newTerrain.defaultTarget[1],
-      alt: 60,
-    });
+    const gunInside = gunPos.x >= 0 && gunPos.x <= newTerrain.worldSize && gunPos.z >= 0 && gunPos.z <= newTerrain.worldSize;
+    const targetInside = targetPos.x >= 0 && targetPos.x <= newTerrain.worldSize && targetPos.z >= 0 && targetPos.z <= newTerrain.worldSize;
+
+    if (!gunInside || !targetInside) {
+      setGunPos({
+        x: newTerrain.defaultWeapon[0],
+        z: newTerrain.defaultWeapon[1],
+        alt: 50,
+      });
+      setTargetPos({
+        x: newTerrain.defaultTarget[0],
+        z: newTerrain.defaultTarget[1],
+        alt: 60,
+      });
+      setTerrainNotice('Markers cleared: outside this terrain');
+      setTimeout(() => setTerrainNotice(null), 3500);
+    }
 
     // If Kolguyev doesn't have drawn layer, fall back to topo
     if (id === 'kolguyev' && activeLayer === 'drawn') {
@@ -74,13 +91,15 @@ export default function App() {
     setDiagnostics((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  // Ballistic solution calculation
+  // Ballistic solution calculation tailored to active ammunition
   const solution = useMemo(() => {
-    return calculateFiringSolution(selectedWeapon, gunPos, targetPos, selectedCharge);
-  }, [selectedWeapon, gunPos, targetPos, selectedCharge]);
+    return calculateFiringSolution(selectedWeapon, gunPos, targetPos, selectedCharge, selectedAmmoId);
+  }, [selectedWeapon, gunPos, targetPos, selectedCharge, selectedAmmoId]);
 
-  // Current charge min/max ranges for range ring display (adapts dynamically to active ring)
-  const currentChargeObj = selectedWeapon.charges[solution.charge] || selectedWeapon.charges[0];
+  // Current charge min/max ranges for range ring display (adapts dynamically to active ammunition and ring)
+  const activeAmmo = selectedWeapon.ammunition?.find((a) => a.id === selectedAmmoId) || selectedWeapon.ammunition?.[0];
+  const activeCharges = activeAmmo ? activeAmmo.charges : selectedWeapon.charges;
+  const currentChargeObj = activeCharges[solution.charge] || activeCharges[0];
   const chargeMinRange = currentChargeObj?.minRange || 0;
   const chargeMaxRange = currentChargeObj?.maxRange || 0;
 
@@ -134,7 +153,9 @@ export default function App() {
         >
           <span className="text-sky-400 font-bold">AZ: {solution.azimuthMils}</span>
           <span className="text-slate-600">|</span>
-          <span className="text-emerald-400 font-bold">EL: {solution.elevationMils ?? '---'}</span>
+          <span className="text-emerald-400 font-bold">
+            EL: {solution.elevationDeg !== null ? `${solution.elevationDeg.toFixed(1)}°` : '---'}
+          </span>
           <span className="text-slate-600">|</span>
           <span className="text-slate-300">Ring {solution.charge}</span>
         </div>
@@ -158,6 +179,7 @@ export default function App() {
             onDiagnosticsUpdate={handleDiagnosticsUpdate}
             reloadTrigger={reloadTrigger}
             onRetry={handleRetry}
+            terrainNotice={terrainNotice}
           />
         </div>
 
@@ -167,7 +189,9 @@ export default function App() {
             terrain={currentTerrain}
             weapons={WEAPONS}
             selectedWeapon={selectedWeapon}
-            onSelectWeapon={setSelectedWeapon}
+            onSelectWeapon={handleSelectWeapon}
+            selectedAmmoId={selectedAmmoId}
+            onSelectAmmo={setSelectedAmmoId}
             selectedCharge={selectedCharge}
             onSelectCharge={setSelectedCharge}
             gunPos={gunPos}

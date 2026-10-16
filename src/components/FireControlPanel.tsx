@@ -19,6 +19,8 @@ interface FireControlPanelProps {
   weapons: WeaponConfig[];
   selectedWeapon: WeaponConfig;
   onSelectWeapon: (weapon: WeaponConfig) => void;
+  selectedAmmoId?: string;
+  onSelectAmmo?: (ammoId: string) => void;
   selectedCharge: number;
   onSelectCharge: (charge: number) => void;
   gunPos: { x: number; z: number; alt: number };
@@ -33,6 +35,8 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
   weapons,
   selectedWeapon,
   onSelectWeapon,
+  selectedAmmoId,
+  onSelectAmmo,
   selectedCharge,
   onSelectCharge,
   gunPos,
@@ -44,6 +48,9 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
   const [gridInputGun, setGridInputGun] = useState('');
   const [gridInputTarget, setGridInputTarget] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const activeAmmo = selectedWeapon.ammunition?.find((a) => a.id === selectedAmmoId) || selectedWeapon.ammunition?.[0];
+  const activeCharges = activeAmmo ? activeAmmo.charges : selectedWeapon.charges;
 
   // Apply typed 6-digit or 8-digit grid (e.g. "048 071", "048071", "0482 0715")
   const applyGridCoord = (input: string, isGun: boolean) => {
@@ -89,8 +96,9 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
 
     const ysStr = solution.peakAlt ? ` | Ys: ${solution.peakAlt}m` : '';
     const dhwStr = solution.dElevPer100m ? ` | ΔHw: ${solution.dElevPer100m}` : '';
+    const ammoLabel = activeAmmo ? `${activeAmmo.name} (${activeAmmo.weightKg}kg)` : solution.ammoType;
 
-    const text = `[FIRE MISSION - ${terrain.name.toUpperCase()}] ${selectedWeapon.name} (${solution.ammoType}) | RING: ${solution.charge} | AZ: ${azMilStr} mils (${solution.azimuthDeg}°) | EL: ${elevMilStr} mils (${solution.elevationDeg ?? '--'}°) | RNG: ${solution.horizontalDistance}m (ΔH: ${solution.heightDifference >= 0 ? '+' : ''}${solution.heightDifference}m) | TOF: ${solution.timeOfFlight || 0}s${ysStr}${dhwStr} | GUN: ${formatGridCoord(gunPos.x, gunPos.z, 6)} | TGT: ${formatGridCoord(targetPos.x, targetPos.z, 6)}`;
+    const text = `[FIRE MISSION - ${terrain.name.toUpperCase()}] ${selectedWeapon.name} [${ammoLabel}] | RING: ${solution.charge} | AZ: ${azMilStr} mils (${solution.azimuthDeg}°) | EL: ${elevMilStr} mils (${solution.elevationDeg ?? '--'}°) | RNG: ${solution.horizontalDistance}m (ΔH: ${solution.heightDifference >= 0 ? '+' : ''}${solution.heightDifference}m) | TOF: ${solution.timeOfFlight || 0}s${ysStr}${dhwStr} | GUN: ${formatGridCoord(gunPos.x, gunPos.z, 6)} | TGT: ${formatGridCoord(targetPos.x, targetPos.z, 6)}`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -115,7 +123,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
           </span>
         </div>
         <p className="text-[11px] text-slate-400 mt-1">
-          Dual-mortar ballistic engine for American (M252) and Russian (2B14 Podnos) artillery.
+          Dual-mortar ballistic engine with comprehensive ammunition registry and live elevation resolver.
         </p>
       </div>
 
@@ -137,7 +145,6 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                   key={w.id}
                   onClick={() => {
                     onSelectWeapon(w);
-                    onSelectCharge(-1); // Default to Auto on weapon switch
                   }}
                   className={`text-left p-2.5 rounded-lg border transition-all ${
                     isSelected
@@ -165,6 +172,67 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
           </div>
         </div>
 
+        {/* Ammunition Type Selector (HE, ILLUM, SMOKE, TRAINING) */}
+        {selectedWeapon.ammunition && selectedWeapon.ammunition.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-sky-400" />
+                <span>Ammunition Type</span>
+              </label>
+              <span className="text-[10px] font-mono text-slate-400">
+                {activeAmmo ? `${activeAmmo.weightKg.toFixed(2)} kg` : ''}
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="relative">
+                <select
+                  value={selectedAmmoId || activeAmmo?.id || ''}
+                  onChange={(e) => onSelectAmmo && onSelectAmmo(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono font-semibold text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 appearance-none cursor-pointer pr-8"
+                >
+                  {selectedWeapon.ammunition.map((ammo) => (
+                    <option key={ammo.id} value={ammo.id}>
+                      [{ammo.category}] {ammo.name} ({ammo.weightKg.toFixed(2)} kg)
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                  ▼
+                </div>
+              </div>
+
+              {/* Dynamic shell attributes badge */}
+              {activeAmmo && (
+                <div className="p-2 rounded bg-slate-950/70 border border-slate-800 flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase ${
+                        activeAmmo.category === 'HE'
+                          ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+                          : activeAmmo.category === 'ILLUM'
+                          ? 'bg-amber-950/60 border-amber-500/50 text-amber-300'
+                          : activeAmmo.category === 'SMOKE'
+                          ? 'bg-slate-800 border-slate-600 text-slate-300'
+                          : 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                      }`}
+                    >
+                      {activeAmmo.category}
+                    </span>
+                    <span className="text-slate-300 font-mono font-semibold text-[11px]">
+                      {activeAmmo.code}
+                    </span>
+                  </div>
+                  <span className="font-mono text-slate-400 text-[10px] bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                    Weight: {activeAmmo.weightKg.toFixed(2)} kg
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Charge Ring Selector (0 to 4 Rings + Automatic Selector) */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
@@ -175,7 +243,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
               </span>
             </label>
             <span className="text-slate-400 text-[10px] font-mono">
-              Bracket: {selectedWeapon.charges[solution.charge]?.minRange}m – {selectedWeapon.charges[solution.charge]?.maxRange}m
+              Bracket: {activeCharges[solution.charge]?.minRange}m – {activeCharges[solution.charge]?.maxRange}m
             </span>
           </div>
 
@@ -196,7 +264,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
             </button>
 
             {/* Manual Rings 0 to 4 */}
-            {selectedWeapon.charges.map((c, idx) => {
+            {activeCharges.map((c, idx) => {
               const isSelected = !isAutoMode && selectedCharge === idx;
               const isRecommended = solution.recommendedCharge === idx;
               return (
@@ -277,16 +345,18 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                 <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
               </div>
               <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
-                {solution.elevationMils !== null
-                  ? (selectedWeapon.milSystem === 'SOVIET'
-                      ? `${String(Math.floor(solution.elevationMils / 100)).padStart(2, '0')}-${String(
-                          solution.elevationMils % 100
-                        ).padStart(2, '0')} mils`
-                      : `${solution.elevationMils} mils`)
-                  : '---'}
+                {solution.elevationDeg !== null ? `${solution.elevationDeg.toFixed(1)}°` : '---'}
               </div>
               <div className="text-[11px] font-mono text-slate-300 mt-0.5 font-bold flex items-center justify-between">
-                <span>{solution.elevationDeg !== null ? `${solution.elevationDeg.toFixed(1)}° Angle` : '---'}</span>
+                <span>
+                  {solution.elevationMils !== null
+                    ? (selectedWeapon.milSystem === 'SOVIET'
+                        ? `${String(Math.floor(solution.elevationMils / 100)).padStart(2, '0')}-${String(
+                            solution.elevationMils % 100
+                          ).padStart(2, '0')} mils`
+                        : `${solution.elevationMils} mils`)
+                    : '---'}
+                </span>
                 <span className="text-[10px] text-sky-400">Ring {solution.charge}</span>
               </div>
             </div>

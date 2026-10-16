@@ -1,4 +1,4 @@
-import { BallisticDataPoint, WeaponConfig, WeaponCharge, BallisticSolution } from '../types';
+import { BallisticDataPoint, WeaponConfig, WeaponCharge, BallisticSolution, AmmoConfig } from '../types';
 
 export interface InterpolatedBallistics {
   elevation: number;
@@ -16,6 +16,8 @@ export interface CalculateSolutionOptions {
   gunPos: { x: number; z: number; alt: number };
   targetPos: { x: number; z: number; alt: number };
   preferredCharge?: number; // -1 for auto
+  ammoId?: string;
+  ammoType?: string;
 }
 
 /**
@@ -108,8 +110,12 @@ export function interpolateBallistics(
 /**
  * Finds all charge rings whose range brackets cover the given target distance.
  */
-export function findValidCharges(weapon: WeaponConfig, distanceMeters: number): WeaponCharge[] {
-  return weapon.charges.filter(
+export function findValidCharges(
+  weaponOrCharges: WeaponConfig | WeaponCharge[],
+  distanceMeters: number
+): WeaponCharge[] {
+  const charges = Array.isArray(weaponOrCharges) ? weaponOrCharges : weaponOrCharges.charges;
+  return charges.filter(
     (c) => distanceMeters >= c.minRange && distanceMeters <= c.maxRange
   );
 }
@@ -119,11 +125,12 @@ export function findValidCharges(weapon: WeaponConfig, distanceMeters: number): 
  * e.g., "Range requires Ring 2" or "Range requires Ring 3 or Ring 4"
  */
 export function getRequiredChargeWarning(
-  weapon: WeaponConfig,
+  weaponOrCharges: WeaponConfig | WeaponCharge[],
   selectedChargeIdx: number,
   distanceMeters: number
 ): string | undefined {
-  const selectedCharge = weapon.charges[selectedChargeIdx];
+  const charges = Array.isArray(weaponOrCharges) ? weaponOrCharges : weaponOrCharges.charges;
+  const selectedCharge = charges[selectedChargeIdx];
   if (!selectedCharge) return 'Invalid charge selected';
 
   // If in range of current charge, no warning
@@ -132,7 +139,7 @@ export function getRequiredChargeWarning(
   }
 
   // Find charges that can hit this target
-  const valid = findValidCharges(weapon, distanceMeters);
+  const valid = findValidCharges(charges, distanceMeters);
 
   if (valid.length > 0) {
     const ringNames = valid.map((c) => `Ring ${c.charge}`).join(' or ');
@@ -140,8 +147,8 @@ export function getRequiredChargeWarning(
   }
 
   // Outside weapon global min or max
-  const globalMin = Math.min(...weapon.charges.map((c) => c.minRange));
-  const globalMax = Math.max(...weapon.charges.map((c) => c.maxRange));
+  const globalMin = Math.min(...charges.map((c) => c.minRange));
+  const globalMax = Math.max(...charges.map((c) => c.maxRange));
 
   if (distanceMeters < globalMin) {
     return `Target distance (${Math.round(distanceMeters)}m) below minimum range (${globalMin}m)`;
@@ -160,14 +167,35 @@ export function calculateAltitudeCorrection(deltaAltMeters: number, dElevPer100m
 }
 
 /**
- * Computes high-precision firing solution for mortar systems with dynamic charge table selection
+ * Computes high-precision firing solution for mortar systems with dynamic charge and ammo table selection
  */
 export function solveMortarFireMission({
   weapon,
   gunPos,
   targetPos,
   preferredCharge,
+  ammoId,
+  ammoType,
 }: CalculateSolutionOptions): BallisticSolution {
+  // Resolve active ammo from weapon.ammunition if configured
+  let activeAmmo: AmmoConfig | undefined = undefined;
+  if (weapon.ammunition && weapon.ammunition.length > 0) {
+    const targetKey = (ammoId || ammoType)?.toLowerCase();
+    if (targetKey) {
+      activeAmmo = weapon.ammunition.find(
+        (a) =>
+          a.id.toLowerCase() === targetKey ||
+          a.code.toLowerCase() === targetKey ||
+          a.name.toLowerCase().includes(targetKey)
+      );
+    }
+    if (!activeAmmo) {
+      activeAmmo = weapon.ammunition[0];
+    }
+  }
+
+  const activeCharges = activeAmmo ? activeAmmo.charges : weapon.charges;
+
   // Euclidean planar distance (1 meter per coordinate unit)
   const dx = targetPos.x - gunPos.x;
   const dz = targetPos.z - gunPos.z;
@@ -186,7 +214,7 @@ export function solveMortarFireMission({
   const azimuthMils = (angleRad / (2 * Math.PI)) * weapon.milsPerCircle;
 
   // Determine valid charge rings for this distance
-  const validCharges = findValidCharges(weapon, horizontalDistance);
+  const validCharges = findValidCharges(activeCharges, horizontalDistance);
 
   // Automatic optimal charge selection
   let recommendedCharge = 0;
@@ -206,11 +234,11 @@ export function solveMortarFireMission({
     }
   } else {
     // Outside all charges: choose closest boundary
-    const globalMin = Math.min(...weapon.charges.map((c) => c.minRange));
+    const globalMin = Math.min(...activeCharges.map((c) => c.minRange));
     if (horizontalDistance < globalMin) {
-      recommendedCharge = weapon.charges[0].charge;
+      recommendedCharge = activeCharges[0].charge;
     } else {
-      recommendedCharge = weapon.charges[weapon.charges.length - 1].charge;
+      recommendedCharge = activeCharges[activeCharges.length - 1].charge;
     }
   }
 
@@ -220,12 +248,12 @@ export function solveMortarFireMission({
   const isAuto = preferredCharge === undefined || preferredCharge < 0;
   const activeChargeIdx = isAuto ? recommendedCharge : preferredCharge;
 
-  const selectedChargeObj = weapon.charges.find((c) => c.charge === activeChargeIdx) || weapon.charges[0];
+  const selectedChargeObj = activeCharges.find((c) => c.charge === activeChargeIdx) || activeCharges[0];
   const table = selectedChargeObj.table;
   const inRange = horizontalDistance >= selectedChargeObj.minRange && horizontalDistance <= selectedChargeObj.maxRange;
 
   // Check explicit bracket guidance / warnings
-  let warning: string | undefined = getRequiredChargeWarning(weapon, activeChargeIdx, horizontalDistance);
+  let warning: string | undefined = getRequiredChargeWarning(activeCharges, activeChargeIdx, horizontalDistance);
 
   let elevationMils: number | null = null;
   let elevationDeg: number | null = null;
@@ -283,8 +311,31 @@ export function solveMortarFireMission({
     angleImpact,
     inRange,
     warning,
-    ammoType: weapon.caliber,
+    ammoType: activeAmmo ? `${activeAmmo.code} ${activeAmmo.name}` : weapon.caliber,
+    ammoId: activeAmmo?.id,
+    ammoWeightKg: activeAmmo?.weightKg,
+    ammoCategory: activeAmmo?.category,
   };
+}
+
+/**
+ * Direct calculation entry point supporting weapon, ammoType, chargeRing, targetRange, and optional deltaAlt
+ */
+export function calculateSolutionByAmmo(
+  weapon: WeaponConfig,
+  ammoType: string,
+  chargeRing: number,
+  targetRange: number,
+  deltaAlt: number = 0
+): BallisticSolution {
+  return solveMortarFireMission({
+    weapon,
+    gunPos: { x: 0, z: 0, alt: 0 },
+    targetPos: { x: 0, z: targetRange, alt: deltaAlt },
+    preferredCharge: chargeRing,
+    ammoId: ammoType,
+    ammoType,
+  });
 }
 
 /**

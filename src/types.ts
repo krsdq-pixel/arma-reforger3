@@ -8,6 +8,7 @@ export interface TerrainPOI {
   z: number; // game meters northing [0..worldSize]
   kind: 'capital' | 'town' | 'village' | 'landmark' | 'military' | 'hill' | 'bay';
   elevation?: number;
+  tier?: 1 | 2 | 3;
 }
 
 export interface TerrainConfig {
@@ -27,8 +28,15 @@ export interface TerrainConfig {
     sat?: string;
     drawn?: string;
   };
+  layerZoomLimits?: {
+    topo: { maxNativeZoom: number; maxZoom: number };
+    sat?: { maxNativeZoom: number; maxZoom: number };
+    drawn?: { maxNativeZoom: number; maxZoom: number };
+  };
   pois: TerrainPOI[];
   description: string;
+  tileHost?: string;
+  attribution?: string;
 }
 
 export type MilSystem = 'NATO' | 'SOVIET';
@@ -41,6 +49,18 @@ export interface BallisticDataPoint {
   peakAlt?: number; // Y_s (Peak Altitude in meters)
   angleImpact?: number; // Impact angle in degrees
   dispersion?: number; // meters
+}
+
+export type AmmoCategory = 'HE' | 'ILLUM' | 'SMOKE' | 'TRAINING';
+
+export interface AmmoConfig {
+  id: string;
+  name: string;
+  code: string;
+  category: AmmoCategory;
+  weightKg: number;
+  description: string;
+  charges: WeaponCharge[];
 }
 
 export interface WeaponCharge {
@@ -62,6 +82,7 @@ export interface WeaponConfig {
   minElevation: number;
   maxElevation: number;
   charges: WeaponCharge[];
+  ammunition?: AmmoConfig[];
   description: string;
 }
 
@@ -82,6 +103,9 @@ export interface BallisticSolution {
   inRange: boolean;
   warning?: string;
   ammoType: string;
+  ammoId?: string;
+  ammoWeightKg?: number;
+  ammoCategory?: AmmoCategory;
 }
 
 export interface TileDiagnostics {

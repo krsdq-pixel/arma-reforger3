@@ -5,6 +5,7 @@ import {
   findValidCharges,
   getRequiredChargeWarning,
   solveMortarFireMission,
+  calculateSolutionByAmmo,
 } from './ballisticsCalculator';
 import {
   M252_M821_HE_CHARGE_0,
@@ -17,6 +18,8 @@ import {
   PODNOS_O832DU_HE_CHARGE_2,
   PODNOS_O832DU_HE_CHARGE_3,
   PODNOS_O832DU_HE_CHARGE_4,
+  M252_AMMUNITION,
+  PODNOS_AMMUNITION,
   WEAPONS,
 } from '../data/ballistics';
 
@@ -256,5 +259,150 @@ describe('Mortar Ballistic Engine - Dynamic Charges & Brackets Validation', () =
       expect(solOver.warning).toMatch(/exceeds maximum range/i);
     });
   });
+
+  describe('6. Comprehensive Ammunition Registry & Multi-Ammo Calculation', () => {
+    it('verifies US M252 has 4 distinct ammunition types with authentic in-game weights', () => {
+      expect(m252Weapon.ammunition).toBeDefined();
+      expect(m252Weapon.ammunition!.length).toBe(4);
+
+      const [he, illum, smoke, training] = m252Weapon.ammunition!;
+
+      // 1. M821 HE: 4.06 kg
+      expect(he.id).toBe('M821_HE');
+      expect(he.category).toBe('HE');
+      expect(he.weightKg).toBe(4.06);
+
+      // 2. M853A1 ILLUM: 4.00 kg
+      expect(illum.id).toBe('M853A1_ILLUM');
+      expect(illum.category).toBe('ILLUM');
+      expect(illum.weightKg).toBe(4.0);
+
+      // 3. M819 SMOKE: 4.85 kg
+      expect(smoke.id).toBe('M819_SMOKE');
+      expect(smoke.category).toBe('SMOKE');
+      expect(smoke.weightKg).toBe(4.85);
+
+      // 4. M879 TRAINING: 4.26 kg
+      expect(training.id).toBe('M879_TRAINING');
+      expect(training.category).toBe('TRAINING');
+      expect(training.weightKg).toBe(4.26);
+    });
+
+    it('verifies Soviet 2B14 Podnos has 3 distinct ammunition types with authentic weights', () => {
+      expect(podnosWeapon.ammunition).toBeDefined();
+      expect(podnosWeapon.ammunition!.length).toBe(3);
+
+      const [he, illum, smoke] = podnosWeapon.ammunition!;
+
+      // 1. O832DU HE: 3.10 kg
+      expect(he.id).toBe('O832DU_HE');
+      expect(he.category).toBe('HE');
+      expect(he.weightKg).toBe(3.1);
+
+      // 2. S832S ILLUM: 3.51 kg
+      expect(illum.id).toBe('S832S_ILLUM');
+      expect(illum.category).toBe('ILLUM');
+      expect(illum.weightKg).toBe(3.51);
+
+      // 3. D832DU SMOKE: 3.48 kg
+      expect(smoke.id).toBe('D832DU_SMOKE');
+      expect(smoke.category).toBe('SMOKE');
+      expect(smoke.weightKg).toBe(3.48);
+    });
+
+    it('dynamically recalculates ballistic solution when switching between ammunition types', () => {
+      // Test at 1000m on US M252 with Charge 4
+      const solHE = solveMortarFireMission({
+        weapon: m252Weapon,
+        gunPos: { x: 0, z: 0, alt: 0 },
+        targetPos: { x: 0, z: 1000, alt: 0 },
+        preferredCharge: 4,
+        ammoId: 'M821_HE',
+      });
+
+      const solSmoke = solveMortarFireMission({
+        weapon: m252Weapon,
+        gunPos: { x: 0, z: 0, alt: 0 },
+        targetPos: { x: 0, z: 1000, alt: 0 },
+        preferredCharge: 4,
+        ammoId: 'M819_SMOKE',
+      });
+
+      expect(solHE.elevationMils).toBe(1295);
+      expect(solHE.ammoWeightKg).toBe(4.06);
+
+      // Smoke round is 4.85 kg (heavier), requiring higher elevation and exhibiting different flight time
+      expect(solSmoke.ammoWeightKg).toBe(4.85);
+      expect(solSmoke.elevationMils).not.toBeNull();
+      expect(solSmoke.elevationMils).not.toBe(solHE.elevationMils);
+    });
+
+    it('verifies direct calculateSolutionByAmmo helper API', () => {
+      const solution = calculateSolutionByAmmo(m252Weapon, 'M821_HE', 4, 1000, 0);
+      expect(solution.elevationMils).toBe(1295);
+      expect(solution.charge).toBe(4);
+      expect(solution.horizontalDistance).toBe(1000);
+      expect(solution.inRange).toBe(true);
+
+      // With hill altitude difference of +100m
+      const solutionHill = calculateSolutionByAmmo(m252Weapon, 'M821_HE', 4, 1000, 100);
+      expect(solutionHill.elevationMils).toBe(1260);
+    });
+  });
+
+  describe('6. Elevation Degree Conversion & Sight Limit Verification', () => {
+    it('verifies American M252 NATO 6400 mil system and reference angle values', () => {
+      expect(m252Weapon.milsPerCircle).toBe(6400);
+      expect(m252Weapon.minElevation).toBe(800);
+      expect(m252Weapon.maxElevation).toBe(1515);
+
+      // degrees = mils * 360 / 6400
+      const degMin = (800 * 360) / 6400;
+      expect(degMin).toBe(45.0);
+
+      const degMax = Math.round(((1515 * 360) / 6400) * 10) / 10;
+      expect(degMax).toBe(85.2);
+
+      // Verify that firing solution elevationDeg matches formula
+      const sol = solveMortarFireMission({
+        weapon: m252Weapon,
+        gunPos: { x: 0, z: 0, alt: 0 },
+        targetPos: { x: 0, z: 1000, alt: 0 },
+        preferredCharge: 4,
+        ammoId: 'M821_HE',
+      });
+      expect(sol.elevationMils).toBe(1295);
+      const expectedDeg = Math.round(((1295 * 360) / 6400) * 10) / 10;
+      expect(sol.elevationDeg).toBe(expectedDeg);
+      expect(sol.elevationDeg).toBe(72.8);
+    });
+
+    it('verifies Soviet 2B14 Podnos Warsaw Pact 6000 mil system and reference angle values', () => {
+      expect(podnosWeapon.milsPerCircle).toBe(6000);
+      expect(podnosWeapon.minElevation).toBe(748);
+      expect(podnosWeapon.maxElevation).toBe(1415);
+
+      // degrees = mils * 360 / 6000
+      const degMin = Math.round(((748 * 360) / 6000) * 10) / 10;
+      expect(degMin).toBe(44.9);
+
+      const degMax = Math.round(((1415 * 360) / 6000) * 10) / 10;
+      expect(degMax).toBe(84.9);
+
+      // Verify that firing solution elevationDeg matches Soviet formula
+      const sol = solveMortarFireMission({
+        weapon: podnosWeapon,
+        gunPos: { x: 0, z: 0, alt: 0 },
+        targetPos: { x: 0, z: 1000, alt: 0 },
+        preferredCharge: 4,
+        ammoId: 'O832DU_HE',
+      });
+      expect(sol.elevationMils).not.toBeNull();
+      const expectedDeg = Math.round(((sol.elevationMils! * 360) / 6000) * 10) / 10;
+      expect(sol.elevationDeg).toBe(expectedDeg);
+    });
+  });
 });
+
+
 

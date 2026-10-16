@@ -104,11 +104,9 @@
   pointer-events: none;
 }
 
-/* Ensure maximum tile sharpness for roads, contours, and vegetation */
+/* Tile rendering: standard smooth bilinear interpolation for over-zoom scaling */
 .leaflet-tile {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
+  /* Removed image-rendering: pixelated/crisp-edges to prevent blocky artifacts */
 }
 
 /* Marker Touch Optimization */
