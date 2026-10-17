@@ -37,7 +37,9 @@ import {
   Copy, 
   AlertTriangle,
   Info,
-  ShieldCheck
+  ShieldCheck,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -56,7 +58,10 @@ interface SettingsModalProps {
   onAddMortar: (mortar: CustomMortarConfig) => void;
   onDeleteMortar: (id: string) => void;
   onImportBackup: (importedData: any) => void;
-  onResetSection: (section: 'appearance' | 'map' | 'mortar' | 'language' | 'all' | 'userData' | 'factory') => void;
+  onResetSection: (section: 'appearance' | 'map' | 'mortar' | 'language' | 'all' | 'userData' | 'factory' | 'visibility') => void;
+  onQuickMapOnly?: () => void;
+  onQuickShowAll?: () => void;
+  onQuickRestoreDefault?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -76,6 +81,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onDeleteMortar,
   onImportBackup,
   onResetSection,
+  onQuickMapOnly,
+  onQuickShowAll,
+  onQuickRestoreDefault,
 }) => {
   if (!isOpen) return null;
 
@@ -85,10 +93,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   // Active expanded accordion categories
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     general: true,
+    interfaceVisibility: true,
     mapAppearance: false,
     mapLabels: false,
     markers: false,
-    mortarConfig: true,
+    mortarConfig: false,
     weather: false,
     measurementUnits: false,
     language: false,
@@ -315,6 +324,227 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         className="flex-1 accent-sky-500 cursor-pointer"
                       />
                       <span className="w-12 text-center font-bold text-sky-400">{settings.panelWidth}px</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* INTERFACE VISIBILITY & CONTROLS */}
+          <div className="border border-sky-500/40 rounded-xl overflow-hidden bg-slate-950/60 shadow-lg">
+            <button
+              onClick={() => toggleCategory('interfaceVisibility')}
+              className="w-full p-3 bg-slate-950/90 flex items-center justify-between font-bold text-slate-200 hover:text-white text-left"
+            >
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-sky-400" />
+                <span className="text-sky-300 font-bold">{t.settingsCategories.interfaceVisibility}</span>
+              </div>
+              {expandedCategories.interfaceVisibility ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {expandedCategories.interfaceVisibility && (
+              <div className="p-4 space-y-4 border-t border-slate-800/80">
+                <p className="text-[11px] text-slate-400">
+                  {t.visibility.description}
+                </p>
+
+                {/* Quick Presets */}
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 block mb-2 uppercase">
+                    {t.visibility.quickActions}
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      onClick={() => {
+                        if (onQuickMapOnly) {
+                          onQuickMapOnly();
+                        } else {
+                          onUpdateSettings(StorageService.setMapOnly(settings));
+                        }
+                        notify(t.visibility.mapOnly);
+                      }}
+                      className="p-2.5 rounded-lg border border-sky-500/30 bg-sky-950/40 hover:bg-sky-900/50 text-left flex flex-col justify-between transition-all"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-sky-300 text-xs mb-1">
+                        <EyeOff className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                        <span>{t.visibility.mapOnly}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400">100% Full Map</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (onQuickMapOnly) {
+                          onQuickMapOnly();
+                        } else {
+                          onUpdateSettings(StorageService.setMapOnly(settings));
+                        }
+                        notify(t.visibility.hideAll);
+                      }}
+                      className="p-2.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-850 text-left flex flex-col justify-between transition-all"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-slate-200 text-xs mb-1">
+                        <EyeOff className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{t.visibility.hideAll}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400">Hide Optional Bars</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (onQuickShowAll) {
+                          onQuickShowAll();
+                        } else {
+                          onUpdateSettings(StorageService.setShowAll(settings));
+                        }
+                        notify(t.visibility.showAll);
+                      }}
+                      className="p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-950/40 hover:bg-emerald-900/50 text-left flex flex-col justify-between transition-all"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-300 text-xs mb-1">
+                        <Eye className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>{t.visibility.showAll}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400">All Elements & Panels</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (onQuickRestoreDefault) {
+                          onQuickRestoreDefault();
+                        } else {
+                          onUpdateSettings(StorageService.resetVisibility(settings));
+                        }
+                        notify(t.visibility.restoreDefaults);
+                      }}
+                      className="p-2.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-850 text-left flex flex-col justify-between transition-all"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-slate-300 text-xs mb-1">
+                        <RotateCcw className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{t.visibility.restoreDefaults}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400">Map-Only Default</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Individual Component Toggles */}
+                <div className="border-t border-slate-800/80 pt-3">
+                  <label className="text-[11px] font-bold text-slate-400 block mb-2 uppercase">
+                    {t.visibility.componentsTitle}
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { key: 'showHeader', label: t.visibility.showHeader },
+                      { key: 'showTerrainTabs', label: t.visibility.showTerrainTabs },
+                      { key: 'showMobileTabs', label: t.visibility.showMobileTabs },
+                      { key: 'showLiveSolutionPill', label: t.visibility.showLiveSolutionPill },
+                      { key: 'showMapTypeSelector', label: t.visibility.showMapTypeSelector },
+                      { key: 'showMarkerControls', label: t.visibility.showMarkerControls },
+                      { key: 'showMapTools', label: t.visibility.showMapTools },
+                      { key: 'showFcsButton', label: t.visibility.showFcsButton },
+                      { key: 'showSettingsButton', label: t.visibility.showSettingsButton },
+                      { key: 'showZoomControls', label: t.visibility.showZoomControls },
+                      { key: 'showBottomCoordinatesHud', label: t.visibility.showBottomCoordinatesHud },
+                    ].map((item) => {
+                      const isChecked = !!(settings.visibility as any)[item.key];
+                      return (
+                        <div
+                          key={item.key}
+                          onClick={() => {
+                            onUpdateSettings({
+                              visibility: {
+                                ...settings.visibility,
+                                [item.key]: !isChecked,
+                              },
+                            });
+                          }}
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/60 hover:bg-slate-850 border border-slate-800 cursor-pointer transition-colors"
+                        >
+                          <span className="text-xs text-slate-300 select-none">
+                            {item.label}
+                          </span>
+                          <div
+                            className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center shrink-0 ${
+                              isChecked ? 'bg-sky-500 justify-end' : 'bg-slate-700 justify-start'
+                            }`}
+                          >
+                            <div className="w-4 h-4 rounded-full bg-white shadow-md"></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Three-Dot Menu Button Position & Size Customization */}
+                <div className="border-t border-slate-800/80 pt-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 block mb-1.5 uppercase">
+                        {t.visibility.menuPosition}
+                      </label>
+                      <div className="grid grid-cols-2 gap-1.5 text-xs">
+                        {[
+                          { id: 'top-right', label: isAr ? 'أعلى اليمين' : 'Top Right' },
+                          { id: 'top-left', label: isAr ? 'أعلى اليسار' : 'Top Left' },
+                          { id: 'bottom-right', label: isAr ? 'أسفل اليمين' : 'Bottom Right' },
+                          { id: 'bottom-left', label: isAr ? 'أسفل اليسار' : 'Bottom Left' },
+                        ].map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              onUpdateSettings({
+                                visibility: {
+                                  ...settings.visibility,
+                                  menuButtonPosition: p.id as any,
+                                },
+                              });
+                            }}
+                            className={`p-2 rounded border text-xs font-semibold ${
+                              settings.visibility.menuButtonPosition === p.id
+                                ? 'bg-sky-500/20 text-sky-300 border-sky-400'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 block mb-1.5 uppercase">
+                        {t.visibility.menuSize}
+                      </label>
+                      <div className="flex gap-2">
+                        {[
+                          { id: 'sm', label: isAr ? 'صغير' : 'Small' },
+                          { id: 'md', label: isAr ? 'متوسط' : 'Medium' },
+                          { id: 'lg', label: isAr ? 'كبير' : 'Large' },
+                        ].map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => {
+                              onUpdateSettings({
+                                visibility: {
+                                  ...settings.visibility,
+                                  menuButtonSize: s.id as any,
+                                },
+                              });
+                            }}
+                            className={`flex-1 py-2 rounded border text-xs font-semibold ${
+                              settings.visibility.menuButtonSize === s.id
+                                ? 'bg-sky-500 text-slate-950 font-bold border-sky-400'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>

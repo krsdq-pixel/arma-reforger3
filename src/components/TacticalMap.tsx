@@ -62,6 +62,7 @@ interface TacticalMapProps {
   onToggleFcs: () => void;
   onToggleSettings: () => void;
   lang: 'en' | 'ar';
+  fitMissionTrigger?: number;
 }
 
 export const TacticalMap: React.FC<TacticalMapProps> = ({
@@ -90,6 +91,7 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
   onToggleFcs,
   onToggleSettings,
   lang,
+  fitMissionTrigger,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -862,6 +864,12 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
     map.fitBounds(bounds.pad(0.3), { maxZoom: 5, animate: true });
   }, [gunPos, targetPos]);
 
+  useEffect(() => {
+    if (fitMissionTrigger && fitMissionTrigger > 0) {
+      fitMission();
+    }
+  }, [fitMissionTrigger, fitMission]);
+
   const handleZoomIn = () => {
     mapInstanceRef.current?.zoomIn();
   };
@@ -891,175 +899,194 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
       dir={isAr ? 'rtl' : 'ltr'}
     >
       {/* Top Map Floating HUD Control Bar (Compact, Responsive, Fully Localized) */}
-      <div className="absolute top-2.5 left-2.5 right-2.5 sm:right-auto z-[1000] flex flex-wrap items-center gap-1.5 md:gap-2 pointer-events-auto">
-        
-        {/* Layer Switcher (Topo / Satellite / Drawn) */}
-        <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 md:p-1 shadow-xl">
-          <button
-            onClick={() => onLayerChange('topo')}
-            className={`px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
-              activeLayer === 'topo'
-                ? 'bg-sky-500 text-slate-950 shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            {isAr ? 'طوبوغرافي' : 'Topo'}
-          </button>
-          {terrain.layers.sat && (
-            <button
-              onClick={() => onLayerChange('sat')}
-              className={`px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
-                activeLayer === 'sat'
-                  ? 'bg-sky-500 text-slate-950 shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              {isAr ? 'قمر صناعي' : 'Satellite'}
-            </button>
+      {/* Top Map Floating HUD Control Bar (Compact, Responsive, Fully Localized, Controlled by Visibility) */}
+      {(settings.visibility.showMapTypeSelector ||
+        settings.visibility.showMarkerControls ||
+        settings.visibility.showMapTools ||
+        settings.visibility.showFcsButton ||
+        settings.visibility.showSettingsButton ||
+        settings.visibility.showZoomControls) && (
+        <div className="absolute top-2.5 left-2.5 right-12 sm:right-auto z-[1000] flex flex-wrap items-center gap-1.5 md:gap-2 pointer-events-auto max-w-[calc(100vw-5rem)]">
+          {/* Layer Switcher (Topo / Satellite / Drawn) */}
+          {settings.visibility.showMapTypeSelector && (
+            <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 md:p-1 shadow-xl">
+              <button
+                onClick={() => onLayerChange('topo')}
+                className={`px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
+                  activeLayer === 'topo'
+                    ? 'bg-sky-500 text-slate-950 shadow-sm'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                {isAr ? 'طوبوغرافي' : 'Topo'}
+              </button>
+              {terrain.layers.sat && (
+                <button
+                  onClick={() => onLayerChange('sat')}
+                  className={`px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
+                    activeLayer === 'sat'
+                      ? 'bg-sky-500 text-slate-950 shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {isAr ? 'قمر صناعي' : 'Satellite'}
+                </button>
+              )}
+              {terrain.layers.drawn && (
+                <button
+                  onClick={() => onLayerChange('drawn')}
+                  className={`px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
+                    activeLayer === 'drawn'
+                      ? 'bg-sky-500 text-slate-950 shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {isAr ? 'مرسوم' : 'Drawn'}
+                </button>
+              )}
+            </div>
           )}
-          {terrain.layers.drawn && (
-            <button
-              onClick={() => onLayerChange('drawn')}
-              className={`px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
-                activeLayer === 'drawn'
-                  ? 'bg-sky-500 text-slate-950 shadow-sm'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              {isAr ? 'مرسوم' : 'Drawn'}
-            </button>
+
+          {/* Tactical Positions Placement Toggles (Gun, Target, Custom Marker) */}
+          {settings.visibility.showMarkerControls && (
+            <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 md:p-1 shadow-xl">
+              <button
+                onClick={() => setPlacementMode((prev) => (prev === 'gun' ? 'none' : 'gun'))}
+                className={`flex items-center gap-1 px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
+                  placementMode === 'gun'
+                    ? 'bg-sky-500 text-slate-950 animate-pulse font-bold'
+                    : 'text-sky-400 hover:bg-slate-800'
+                }`}
+                title={isAr ? 'انقر على الخريطة لتحديد موقع المدفع' : 'Click map to place Gun position'}
+              >
+                <Crosshair className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">{isAr ? 'تثبيت المدفع' : 'Gun'}</span>
+              </button>
+
+              <button
+                onClick={() => setPlacementMode((prev) => (prev === 'target' ? 'none' : 'target'))}
+                className={`flex items-center gap-1 px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
+                  placementMode === 'target'
+                    ? 'bg-red-500 text-slate-950 animate-pulse font-bold'
+                    : 'text-red-400 hover:bg-slate-800'
+                }`}
+                title={isAr ? 'انقر على الخريطة لتحديد موقع الهدف' : 'Click map to place Target position'}
+              >
+                <Target className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">{isAr ? 'تثبيت الهدف' : 'Target'}</span>
+              </button>
+
+              <button
+                onClick={() => setPlacementMode((prev) => (prev === 'marker' ? 'none' : 'marker'))}
+                className={`flex items-center gap-1 px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
+                  placementMode === 'marker'
+                    ? 'bg-amber-500 text-slate-950 animate-pulse font-bold'
+                    : 'text-amber-400 hover:bg-slate-800'
+                }`}
+                title={isAr ? 'انقر على الخريطة لإسقاط علامة تكتيكية مخصصة' : 'Click map to place a Custom Marker'}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isAr ? 'علامة' : 'Marker'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Tactical Map Tools: Ruler, Weather, Center, Fullscreen */}
+          {settings.visibility.showMapTools && (
+            <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 md:p-1 shadow-xl items-center gap-0.5">
+              <button
+                onClick={() => {
+                  setIsRulerActive((v) => !v);
+                  if (isRulerActive) setRulerPoints([]);
+                }}
+                className={`p-1.5 rounded transition-all flex items-center gap-1 ${
+                  isRulerActive ? 'text-amber-400 bg-amber-950/70 ring-1 ring-amber-500 font-bold' : 'text-slate-400 hover:bg-slate-800'
+                }`}
+                title={t.rulerButton}
+              >
+                <Ruler className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={onToggleWeather}
+                className={`p-1.5 rounded transition-all ${
+                  settings.weatherPanelOpen ? 'text-sky-400 bg-sky-950/70 ring-1 ring-sky-500' : 'text-slate-400 hover:bg-slate-800'
+                }`}
+                title={t.weatherButton}
+              >
+                <Wind className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={fitMission}
+                className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+                title={isAr ? 'توسيط الخارطة على مهمة الرماية' : 'Center on Gun & Target Mission'}
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={toggleFullscreen}
+                className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-all hidden sm:block"
+                title={isAr ? 'ملء الشاشة' : 'Toggle Fullscreen'}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+            </div>
+          )}
+
+          {/* Primary Action Buttons: Toggle FCS Panel & Open Settings */}
+          {(settings.visibility.showFcsButton || settings.visibility.showSettingsButton) && (
+            <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 md:p-1 shadow-xl items-center gap-1">
+              {settings.visibility.showFcsButton && (
+                <button
+                  onClick={onToggleFcs}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded transition-all ${
+                    settings.fcsPanelOpen
+                      ? 'bg-sky-500 text-slate-950 shadow-md font-extrabold'
+                      : 'bg-slate-800 text-sky-400 hover:bg-slate-700'
+                  }`}
+                  title={isAr ? 'فتح أو إخفاء حاسبة الرماية' : 'Toggle Fire Control Panel (FCS)'}
+                >
+                  <Crosshair className="w-3.5 h-3.5" />
+                  <span>{isAr ? 'الحاسبة' : 'FCS Panel'}</span>
+                </button>
+              )}
+
+              {settings.visibility.showSettingsButton && (
+                <button
+                  onClick={onToggleSettings}
+                  className="p-1.5 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-all flex items-center gap-1 text-xs"
+                  title={t.settingsButton}
+                >
+                  <Settings className="w-4 h-4 text-slate-300" />
+                  <span className="hidden md:inline">{isAr ? 'الإعدادات' : 'Settings'}</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Zoom In / Out Buttons */}
+          {settings.visibility.showZoomControls && (
+            <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 shadow-xl">
+              <button
+                onClick={handleZoomIn}
+                className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+                title="Zoom In"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleZoomOut}
+                className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+                title="Zoom Out"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </div>
-
-        {/* Tactical Positions Placement Toggles (Gun, Target, Custom Marker) */}
-        <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 md:p-1 shadow-xl">
-          <button
-            onClick={() => setPlacementMode((prev) => (prev === 'gun' ? 'none' : 'gun'))}
-            className={`flex items-center gap-1 px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
-              placementMode === 'gun'
-                ? 'bg-sky-500 text-slate-950 animate-pulse font-bold'
-                : 'text-sky-400 hover:bg-slate-800'
-            }`}
-            title={isAr ? 'انقر على الخريطة لتحديد موقع المدفع' : 'Click map to place Gun position'}
-          >
-            <Crosshair className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">{isAr ? 'تثبيت المدفع' : 'Gun'}</span>
-          </button>
-
-          <button
-            onClick={() => setPlacementMode((prev) => (prev === 'target' ? 'none' : 'target'))}
-            className={`flex items-center gap-1 px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
-              placementMode === 'target'
-                ? 'bg-red-500 text-slate-950 animate-pulse font-bold'
-                : 'text-red-400 hover:bg-slate-800'
-            }`}
-            title={isAr ? 'انقر على الخريطة لتحديد موقع الهدف' : 'Click map to place Target position'}
-          >
-            <Target className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">{isAr ? 'تثبيت الهدف' : 'Target'}</span>
-          </button>
-
-          <button
-            onClick={() => setPlacementMode((prev) => (prev === 'marker' ? 'none' : 'marker'))}
-            className={`flex items-center gap-1 px-2 py-1 md:px-2.5 text-xs font-semibold rounded transition-all ${
-              placementMode === 'marker'
-                ? 'bg-amber-500 text-slate-950 animate-pulse font-bold'
-                : 'text-amber-400 hover:bg-slate-800'
-            }`}
-            title={isAr ? 'انقر على الخريطة لإسقاط علامة تكتيكية مخصصة' : 'Click map to place a Custom Marker'}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{isAr ? 'علامة' : 'Marker'}</span>
-          </button>
-        </div>
-
-        {/* Tactical Map Tools: Ruler, Weather, Center, Fullscreen */}
-        <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 md:p-1 shadow-xl items-center gap-0.5">
-          <button
-            onClick={() => {
-              setIsRulerActive((v) => !v);
-              if (isRulerActive) setRulerPoints([]);
-            }}
-            className={`p-1.5 rounded transition-all flex items-center gap-1 ${
-              isRulerActive ? 'text-amber-400 bg-amber-950/70 ring-1 ring-amber-500 font-bold' : 'text-slate-400 hover:bg-slate-800'
-            }`}
-            title={t.rulerButton}
-          >
-            <Ruler className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={onToggleWeather}
-            className={`p-1.5 rounded transition-all ${
-              settings.weatherPanelOpen ? 'text-sky-400 bg-sky-950/70 ring-1 ring-sky-500' : 'text-slate-400 hover:bg-slate-800'
-            }`}
-            title={t.weatherButton}
-          >
-            <Wind className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={fitMission}
-            className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
-            title={isAr ? 'توسيط الخارطة على مهمة الرماية' : 'Center on Gun & Target Mission'}
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={toggleFullscreen}
-            className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-all hidden sm:block"
-            title={isAr ? 'ملء الشاشة' : 'Toggle Fullscreen'}
-          >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Primary Action Buttons: Toggle FCS Panel & Open Settings */}
-        <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 md:p-1 shadow-xl items-center gap-1">
-          {/* Toggle FCS Panel Button */}
-          <button
-            onClick={onToggleFcs}
-            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded transition-all ${
-              settings.fcsPanelOpen
-                ? 'bg-sky-500 text-slate-950 shadow-md font-extrabold'
-                : 'bg-slate-800 text-sky-400 hover:bg-slate-700'
-            }`}
-            title={isAr ? 'فتح أو إخفاء حاسبة الرماية' : 'Toggle Fire Control Panel (FCS)'}
-          >
-            <Crosshair className="w-3.5 h-3.5" />
-            <span>{isAr ? 'الحاسبة' : 'FCS Panel'}</span>
-          </button>
-
-          {/* Settings Menu Button */}
-          <button
-            onClick={onToggleSettings}
-            className="p-1.5 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-all flex items-center gap-1 text-xs"
-            title={t.settingsButton}
-          >
-            <Settings className="w-4 h-4 text-slate-300" />
-            <span className="hidden md:inline">{isAr ? 'الإعدادات' : 'Settings'}</span>
-          </button>
-        </div>
-
-        {/* Zoom In / Out Buttons */}
-        <div className="flex bg-slate-900/90 backdrop-blur-md border border-slate-700/70 rounded-lg p-0.5 shadow-xl">
-          <button
-            onClick={handleZoomIn}
-            className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
-            title="Zoom In"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleZoomOut}
-            className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
-            title="Zoom Out"
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Over-zoom Notice */}
       {isOverZoomed && (
@@ -1129,8 +1156,8 @@ export const TacticalMap: React.FC<TacticalMapProps> = ({
         </div>
       )}
 
-      {/* Bottom Coordinates & Stats HUD (Controlled by overlays.showCoordinatesHud) */}
-      {overlays.showCoordinatesHud && (
+      {/* Bottom Coordinates & Stats HUD (Controlled by settings.visibility & overlays.showCoordinatesHud) */}
+      {(settings.visibility.showBottomCoordinatesHud ?? true) && overlays.showCoordinatesHud && (
         <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-[1000] bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-300 shadow-xl pointer-events-auto flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-4">
           <div>
             <span className="text-slate-500 mr-1.5">{isAr ? 'الخارطة:' : 'MAP:'}</span>

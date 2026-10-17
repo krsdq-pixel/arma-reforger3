@@ -1,5 +1,6 @@
 import { 
   AppCustomizationSettings, 
+  InterfaceVisibilitySettings,
   MapOverlaySettings, 
   WeatherSettings, 
   CustomMapMarker, 
@@ -15,9 +16,41 @@ const STORAGE_KEYS = {
   MORTARS: 'arma_reforger_fcs_mortars_v1',
 };
 
+export const DEFAULT_VISIBILITY: InterfaceVisibilitySettings = {
+  showHeader: false,
+  showTerrainTabs: false,
+  showMobileTabs: false,
+  showLiveSolutionPill: false,
+  showMapTypeSelector: false,
+  showMarkerControls: false,
+  showMapTools: false,
+  showFcsButton: false,
+  showSettingsButton: false,
+  showZoomControls: false,
+  showBottomCoordinatesHud: false,
+  menuButtonPosition: 'top-right',
+  menuButtonSize: 'md',
+};
+
+export const FULL_VISIBILITY: InterfaceVisibilitySettings = {
+  showHeader: true,
+  showTerrainTabs: true,
+  showMobileTabs: true,
+  showLiveSolutionPill: true,
+  showMapTypeSelector: true,
+  showMarkerControls: true,
+  showMapTools: true,
+  showFcsButton: true,
+  showSettingsButton: true,
+  showZoomControls: true,
+  showBottomCoordinatesHud: true,
+  menuButtonPosition: 'top-right',
+  menuButtonSize: 'md',
+};
+
 export const DEFAULT_SETTINGS: AppCustomizationSettings = {
   theme: 'dark_tactical',
-  layoutPreset: 'standard',
+  layoutPreset: 'minimal_map',
   panelWidth: 420,
   panelPosition: 'right',
   panelOpacity: 95,
@@ -28,9 +61,10 @@ export const DEFAULT_SETTINGS: AppCustomizationSettings = {
   decimalPrecision: 1,
   elevationDisplayFormat: 'both',
   language: 'en',
-  fcsPanelOpen: true,
+  fcsPanelOpen: false, // Default is clean Map-Only view!
   weatherPanelOpen: false,
   rulerToolOpen: false,
+  visibility: DEFAULT_VISIBILITY,
 };
 
 export const DEFAULT_OVERLAYS: MapOverlaySettings = {
@@ -105,7 +139,15 @@ function safeSet<T>(key: string, value: T): boolean {
 export const StorageService = {
   // Loaders
   loadSettings(): AppCustomizationSettings {
-    return safeGet<AppCustomizationSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
+    const loaded = safeGet<AppCustomizationSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
+    return {
+      ...DEFAULT_SETTINGS,
+      ...loaded,
+      visibility: {
+        ...DEFAULT_VISIBILITY,
+        ...(loaded.visibility || {}),
+      },
+    };
   },
 
   loadOverlays(): MapOverlaySettings {
@@ -229,6 +271,57 @@ export const StorageService = {
       textSize: DEFAULT_SETTINGS.textSize,
       iconSize: DEFAULT_SETTINGS.iconSize,
       buttonSize: DEFAULT_SETTINGS.buttonSize,
+    };
+    safeSet(STORAGE_KEYS.SETTINGS, next);
+    return next;
+  },
+
+  resetVisibility(prev: AppCustomizationSettings): AppCustomizationSettings {
+    const next: AppCustomizationSettings = {
+      ...prev,
+      visibility: { ...DEFAULT_VISIBILITY },
+      fcsPanelOpen: false,
+    };
+    safeSet(STORAGE_KEYS.SETTINGS, next);
+    return next;
+  },
+
+  setMapOnly(prev: AppCustomizationSettings): AppCustomizationSettings {
+    const next: AppCustomizationSettings = {
+      ...prev,
+      layoutPreset: 'minimal_map',
+      fcsPanelOpen: false,
+      weatherPanelOpen: false,
+      rulerToolOpen: false,
+      visibility: {
+        ...prev.visibility,
+        showHeader: false,
+        showTerrainTabs: false,
+        showMobileTabs: false,
+        showLiveSolutionPill: false,
+        showMapTypeSelector: false,
+        showMarkerControls: false,
+        showMapTools: false,
+        showFcsButton: false,
+        showSettingsButton: false,
+        showZoomControls: false,
+        showBottomCoordinatesHud: false,
+      },
+    };
+    safeSet(STORAGE_KEYS.SETTINGS, next);
+    return next;
+  },
+
+  setShowAll(prev: AppCustomizationSettings): AppCustomizationSettings {
+    const next: AppCustomizationSettings = {
+      ...prev,
+      layoutPreset: 'standard',
+      fcsPanelOpen: true,
+      visibility: {
+        ...FULL_VISIBILITY,
+        menuButtonPosition: prev.visibility.menuButtonPosition,
+        menuButtonSize: prev.visibility.menuButtonSize,
+      },
     };
     safeSet(STORAGE_KEYS.SETTINGS, next);
     return next;

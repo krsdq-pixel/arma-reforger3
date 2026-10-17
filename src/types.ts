@@ -239,6 +239,22 @@ export type TextSize = 'sm' | 'md' | 'lg';
 export type DistanceUnit = 'meters' | 'kilometers';
 export type ElevationDisplayFormat = 'both' | 'degrees_first' | 'mils_first';
 
+export interface InterfaceVisibilitySettings {
+  showHeader: boolean;             // Application header and title
+  showTerrainTabs: boolean;        // Map selection tabs (Everon, Arland, Kolguyev)
+  showMobileTabs: boolean;         // Tactical Map and Calculator mobile tabs
+  showLiveSolutionPill: boolean;   // AZ, EL, and Ring information display
+  showMapTypeSelector: boolean;    // Topographic, Satellite, and Drawn map selectors
+  showMarkerControls: boolean;     // Marker and target controls (Gun, Target, Marker)
+  showMapTools: boolean;           // Measurement and reset tools (Ruler, Weather, Center, Fullscreen)
+  showFcsButton: boolean;          // FCS Panel button
+  showSettingsButton: boolean;     // Settings button on map toolbar
+  showZoomControls: boolean;       // Zoom-in and zoom-out controls
+  showBottomCoordinatesHud: boolean; // Bottom controls and coordinates HUD
+  menuButtonPosition: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  menuButtonSize: 'sm' | 'md' | 'lg';
+}
+
 export interface AppCustomizationSettings {
   theme: AppTheme;
   layoutPreset: LayoutPreset;
@@ -255,6 +271,7 @@ export interface AppCustomizationSettings {
   fcsPanelOpen: boolean;
   weatherPanelOpen: boolean;
   rulerToolOpen: boolean;
+  visibility: InterfaceVisibilitySettings;
 }
 
 export interface AppExportData {

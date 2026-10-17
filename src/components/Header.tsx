@@ -1,5 +1,5 @@
 import React from 'react';
-import { TerrainId, TerrainConfig, TileDiagnostics, WeaponConfig, BallisticSolution } from '../types';
+import { TerrainId, TerrainConfig, TileDiagnostics, WeaponConfig, BallisticSolution, InterfaceVisibilitySettings } from '../types';
 import { 
   Crosshair, 
   Activity, 
@@ -22,6 +22,7 @@ interface HeaderProps {
   selectedWeapon?: WeaponConfig;
   lang: 'en' | 'ar';
   onToggleLang: () => void;
+  visibility?: InterfaceVisibilitySettings;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
   selectedWeapon,
   lang,
   onToggleLang,
+  visibility,
 }) => {
   const isSoviet = selectedWeapon?.milSystem === 'SOVIET';
 
@@ -78,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Top Status Bar (Elevation in Degrees, Azimuth, and Ring) - Desktop & Tablet */}
-      {solution && (
+      {(!visibility || visibility.showLiveSolutionPill) && solution && (
         <div className="hidden md:flex items-center gap-2 font-mono text-[11px] bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-lg shadow-inner">
           <span className="text-sky-400 font-bold flex items-center gap-1">
             <span>AZ:</span>
@@ -101,56 +103,62 @@ export const Header: React.FC<HeaderProps> = ({
       )}
 
       {/* Terrain Selector Tabs */}
-      <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 sm:p-1">
-        {(Object.keys(terrains) as TerrainId[]).map((id) => {
-          const terrain = terrains[id];
-          const isActive = id === activeTerrainId;
-          return (
-            <button
-              key={id}
-              onClick={() => onSelectTerrain(id)}
-              className={`px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-mono font-bold rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
-                isActive
-                  ? 'bg-sky-500 text-slate-950 shadow-md font-extrabold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <MapIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span className="uppercase">{terrain.name}</span>
-              <span className="text-[9px] opacity-75 hidden lg:inline">
-                ({terrain.worldSize === 4096 ? '4.1k' : '12.8k'})
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {(!visibility || visibility.showTerrainTabs) && (
+        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 sm:p-1">
+          {(Object.keys(terrains) as TerrainId[]).map((id) => {
+            const terrain = terrains[id];
+            const isActive = id === activeTerrainId;
+            return (
+              <button
+                key={id}
+                onClick={() => onSelectTerrain(id)}
+                className={`px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-mono font-bold rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
+                  isActive
+                    ? 'bg-sky-500 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <MapIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="uppercase">{terrain.name}</span>
+                <span className="text-[9px] opacity-75 hidden lg:inline">
+                  ({terrain.worldSize === 4096 ? '4.1k' : '12.8k'})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Right Tools, Diagnostics, Settings & Language Switcher */}
       <div className="flex items-center gap-1.5 sm:gap-2">
         {/* FCS Panel Toggle Button */}
-        <button
-          onClick={onToggleFcs}
-          className={`hidden sm:flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold rounded-lg border transition-all ${
-            isFcsOpen
-              ? 'bg-sky-500 text-slate-950 border-sky-400 shadow'
-              : 'bg-slate-900 border-slate-700 text-sky-400 hover:bg-slate-800'
-          }`}
-          title={lang === 'ar' ? 'إظهار / إخفاء حاسبة الرماية' : 'Toggle Fire Control Panel (FCS)'}
-        >
-          <Crosshair className="w-3.5 h-3.5" />
-          <span>{lang === 'ar' ? 'الحاسبة' : 'FCS'}</span>
-        </button>
+        {(!visibility || visibility.showFcsButton) && (
+          <button
+            onClick={onToggleFcs}
+            className={`hidden sm:flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold rounded-lg border transition-all ${
+              isFcsOpen
+                ? 'bg-sky-500 text-slate-950 border-sky-400 shadow'
+                : 'bg-slate-900 border-slate-700 text-sky-400 hover:bg-slate-800'
+            }`}
+            title={lang === 'ar' ? 'إظهار / إخفاء حاسبة الرماية' : 'Toggle Fire Control Panel (FCS)'}
+          >
+            <Crosshair className="w-3.5 h-3.5" />
+            <span>{lang === 'ar' ? 'الحاسبة' : 'FCS'}</span>
+          </button>
+        )}
 
         {/* System Settings Button */}
-        <button
-          onClick={onOpenSettings}
-          className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-mono font-bold rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-          title={lang === 'ar' ? 'الإعدادات والتخصيص الشامل' : 'System Settings & Customization'}
-        >
-          <Crosshair className="w-3.5 h-3.5 hidden" />
-          <span>⚙️</span>
-          <span className="hidden md:inline">{lang === 'ar' ? 'الإعدادات' : 'Settings'}</span>
-        </button>
+        {(!visibility || visibility.showSettingsButton) && (
+          <button
+            onClick={onOpenSettings}
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-mono font-bold rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            title={lang === 'ar' ? 'الإعدادات والتخصيص الشامل' : 'System Settings & Customization'}
+          >
+            <Crosshair className="w-3.5 h-3.5 hidden" />
+            <span>⚙️</span>
+            <span className="hidden md:inline">{lang === 'ar' ? 'الإعدادات' : 'Settings'}</span>
+          </button>
+        )}
 
         {/* Arabic / English Language Toggle */}
         <button

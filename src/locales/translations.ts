@@ -59,9 +59,37 @@ export interface TranslationDictionary {
     measurementUnits: string;
     language: string;
     interfaceLayout: string;
+    interfaceVisibility: string;
     storagePrivacy: string;
     importExport: string;
     resetRecovery: string;
+  };
+  visibility: {
+    title: string;
+    description: string;
+    quickActions: string;
+    mapOnly: string;
+    hideAll: string;
+    showAll: string;
+    restoreDefaults: string;
+    componentsTitle: string;
+    showHeader: string;
+    showTerrainTabs: string;
+    showMobileTabs: string;
+    showLiveSolutionPill: string;
+    showMapTypeSelector: string;
+    showMarkerControls: string;
+    showMapTools: string;
+    showFcsButton: string;
+    showSettingsButton: string;
+    showZoomControls: string;
+    showBottomCoordinatesHud: string;
+    menuPosition: string;
+    menuSize: string;
+    threeDotTooltip: string;
+    threeDotTitle: string;
+    openFullSettings: string;
+    closeMenu: string;
   };
   storage: {
     description: string;
@@ -155,10 +183,38 @@ export const TRANSLATIONS: Record<'en' | 'ar', TranslationDictionary> = {
       weather: '6. Weather & Wind Display',
       measurementUnits: '7. Measurement Units',
       language: '8. Language & Translation',
-      interfaceLayout: '9. Interface Layout',
-      storagePrivacy: '10. Data Storage & Privacy',
-      importExport: '11. Import & Export',
-      resetRecovery: '12. Reset & Recovery',
+      interfaceLayout: '9. Interface Layout & Docking',
+      interfaceVisibility: '10. Interface Visibility & Controls',
+      storagePrivacy: '11. Data Storage & Privacy',
+      importExport: '12. Import & Export',
+      resetRecovery: '13. Reset & Recovery',
+    },
+    visibility: {
+      title: 'Interface Element Visibility',
+      description: 'Control the display of every individual screen element. Start in clean map-only mode or toggle specific headers, panels, and tools.',
+      quickActions: 'Quick Display Presets',
+      mapOnly: 'Map Only (Clean View)',
+      hideAll: 'Hide All Optional Elements',
+      showAll: 'Show All Interface Elements',
+      restoreDefaults: 'Restore Default Visibility',
+      componentsTitle: 'Individual Element Visibility Toggles',
+      showHeader: 'Application Header & Brand Bar',
+      showTerrainTabs: 'Map Selection Tabs (Everon, Arland, Kolguyev)',
+      showMobileTabs: 'Tactical Map & Calculator Mobile Tabs',
+      showLiveSolutionPill: 'Live Azimuth / Elevation / Ring Info Display',
+      showMapTypeSelector: 'Map Layer Selector (Topo / Sat / Drawn)',
+      showMarkerControls: 'Gun, Target & Tactical Marker Tools',
+      showMapTools: 'Measurement, Reset & Weather Tools',
+      showFcsButton: 'Fire Control System (FCS) Button',
+      showSettingsButton: 'Settings Button on Map Toolbar',
+      showZoomControls: 'Zoom-in & Zoom-out Controls (+ / -)',
+      showBottomCoordinatesHud: 'Bottom Coordinates & Grid HUD',
+      menuPosition: 'Three-Dot Menu Position',
+      menuSize: 'Three-Dot Menu Size',
+      threeDotTooltip: 'Quick Settings & Visibility Menu',
+      threeDotTitle: 'Quick Tactical Controls',
+      openFullSettings: 'Open All Settings',
+      closeMenu: 'Close Menu',
     },
     storage: {
       description: 'Application data is stored strictly in your browser local storage. No external servers or cloud accounts are used.',
@@ -251,9 +307,37 @@ export const TRANSLATIONS: Record<'en' | 'ar', TranslationDictionary> = {
       measurementUnits: '٧. وحدات القياس',
       language: '٨. اللغة والترجمة',
       interfaceLayout: '٩. تخطيط الواجهة والقوائم',
-      storagePrivacy: '١٠. تخزين البيانات والخصوصية',
-      importExport: '١١. استيراد وتصدير البيانات',
-      resetRecovery: '١٢. إعادة الضبط والتعافي',
+      interfaceVisibility: '١٠. رؤية واجهة المستخدم والتحكم',
+      storagePrivacy: '١١. تخزين البيانات والخصوصية',
+      importExport: '١٢. استيراد وتصدير البيانات',
+      resetRecovery: '١٣. إعادة الضبط والتعافي',
+    },
+    visibility: {
+      title: 'التحكم في رؤية عناصر واجهة المستخدم',
+      description: 'تحكم كامل في إظهار أو إخفاء كل عنصر من عناصر الشاشة. ابدأ في وضع الخريطة النظيفة فقط أو أظهر الأشرطة والأدوات حسب الرغبة.',
+      quickActions: 'إجراءات سريعة لتغيير وضع العرض',
+      mapOnly: 'الخارطة فقط (عرض نظيف بدون أشرطة)',
+      hideAll: 'إخفاء كافة عناصر الواجهة الإضافية',
+      showAll: 'إظهار كافة عناصر الواجهة التكتيكية',
+      restoreDefaults: 'استعادة وضع الرؤية الافتراضي',
+      componentsTitle: 'مفاتيح إظهار/إخفاء العناصر بشكل فردي',
+      showHeader: 'شريط العنوان وشعار المنظومة العلوي',
+      showTerrainTabs: 'ألسنة اختيار الخارطة (إيفرون، أرلاند، كولغويف)',
+      showMobileTabs: 'ألسنة التبديل التكتيكية للأجهزة المحمولة',
+      showLiveSolutionPill: 'شريط قراءة الرماية المباشرة (السمت/الارتفاع/الحلقة)',
+      showMapTypeSelector: 'محدد نوع الخارطة (طبوغرافي / قمر صناعي / رسم)',
+      showMarkerControls: 'أدوات تحديد مواقع المدفع والهدف والعلامات',
+      showMapTools: 'أدوات القياس والمسطرة وتوسيط المهمة والطقس',
+      showFcsButton: 'زر لوحة حاسبة إدارة النيران (FCS)',
+      showSettingsButton: 'زر الإعدادات على شريط أدوات الخارطة',
+      showZoomControls: 'أزرار التكبير والتصغير (+ / -)',
+      showBottomCoordinatesHud: 'شريط إحداثيات الماوس والشبكة أسفل الشاشة',
+      menuPosition: 'موقع زر القائمة ثلاثية النقاط',
+      menuSize: 'حجم زر القائمة ثلاثية النقاط',
+      threeDotTooltip: 'قائمة الإعدادات والرؤية السريعة',
+      threeDotTitle: 'التحكم التكتيكي السريع',
+      openFullSettings: 'فتح لوحة الإعدادات الشاملة',
+      closeMenu: 'إغلاق القائمة',
     },
     storage: {
       description: 'يتم حفظ جميع بيانات التطبيق محلياً وبشكل حصري في ذاكرة التخزين المحلية للمتصفح دون استخدام أي خوادم خارجية.',

@@ -16,13 +16,28 @@ describe('Browser-Based Storage & Customization Service', () => {
     it('returns default customization settings when storage is empty', () => {
       const settings = StorageService.loadSettings();
       expect(settings.theme).toBe('dark_tactical');
-      expect(settings.layoutPreset).toBe('standard');
+      expect(settings.layoutPreset).toBe('minimal_map');
       expect(settings.panelWidth).toBe(420);
       expect(settings.panelPosition).toBe('right');
       expect(settings.distanceUnit).toBe('meters');
       expect(settings.decimalPrecision).toBe(1);
       expect(settings.language).toBe('en');
-      expect(settings.fcsPanelOpen).toBe(true);
+      expect(settings.fcsPanelOpen).toBe(false);
+      expect(settings.visibility).toBeDefined();
+      expect(settings.visibility.showHeader).toBe(false);
+    });
+
+    it('toggles visibility modes between Map Only and Show All', () => {
+      const settings = StorageService.loadSettings();
+      const showAll = StorageService.setShowAll(settings);
+      expect(showAll.visibility.showHeader).toBe(true);
+      expect(showAll.visibility.showTerrainTabs).toBe(true);
+      expect(showAll.fcsPanelOpen).toBe(true);
+
+      const mapOnly = StorageService.setMapOnly(showAll);
+      expect(mapOnly.visibility.showHeader).toBe(false);
+      expect(mapOnly.visibility.showTerrainTabs).toBe(false);
+      expect(mapOnly.fcsPanelOpen).toBe(false);
     });
 
     it('returns default map overlays when storage is empty', () => {

@@ -22,6 +22,7 @@ import { HelpModal } from './components/HelpModal';
 import { SettingsModal } from './components/SettingsModal';
 import { CustomMarkerModal } from './components/CustomMarkerModal';
 import { WeatherWidget } from './components/WeatherWidget';
+import { ThreeDotMenu } from './components/ThreeDotMenu';
 
 export default function App() {
   // 1. Persistent Storage State (Browser LocalStorage)
@@ -31,12 +32,15 @@ export default function App() {
   const [customMarkers, setCustomMarkers] = useState<CustomMapMarker[]>(() => StorageService.loadMarkers());
   const [customMortars, setCustomMortars] = useState<CustomMortarConfig[]>(() => StorageService.loadCustomMortars());
 
-  // 2. Modals State
+  // 2. Modals & Menu State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isThreeDotOpen, setIsThreeDotOpen] = useState(false);
   const [isMarkerModalOpen, setIsMarkerModalOpen] = useState(false);
   const [markerModalCoords, setMarkerModalCoords] = useState<{ x: number; z: number }>({ x: 0, z: 0 });
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [fitMissionTrigger, setFitMissionTrigger] = useState<number>(0);
+  const [isRulerActive, setIsRulerActive] = useState<boolean>(false);
 
   // 3. Operational Map & Weapon State
   const [activeTerrainId, setActiveTerrainId] = useState<TerrainId>('everon');
@@ -191,7 +195,7 @@ export default function App() {
   }, []);
 
   // Granular Reset operations
-  const handleResetSection = useCallback((section: 'appearance' | 'map' | 'mortar' | 'language' | 'all' | 'userData' | 'factory') => {
+  const handleResetSection = useCallback((section: 'appearance' | 'map' | 'mortar' | 'language' | 'all' | 'userData' | 'factory' | 'visibility') => {
     if (section === 'appearance') {
       setSettings((prev) => StorageService.resetAppearance(prev));
     } else if (section === 'map') {
@@ -208,6 +212,8 @@ export default function App() {
       const { markers, mortars } = StorageService.clearUserData();
       setCustomMarkers(markers);
       setCustomMortars(mortars);
+    } else if (section === 'visibility') {
+      setSettings((prev) => StorageService.resetVisibility(prev));
     } else if (section === 'factory') {
       StorageService.factoryReset();
       setSettings(StorageService.loadSettings());
@@ -216,6 +222,22 @@ export default function App() {
       setCustomMarkers([]);
       setCustomMortars([]);
     }
+  }, []);
+
+  const handleQuickMapOnly = useCallback(() => {
+    setSettings((prev) => StorageService.setMapOnly(prev));
+  }, []);
+
+  const handleQuickShowAll = useCallback(() => {
+    setSettings((prev) => StorageService.setShowAll(prev));
+  }, []);
+
+  const handleQuickRestoreDefault = useCallback(() => {
+    setSettings((prev) => StorageService.resetVisibility(prev));
+  }, []);
+
+  const handleFitMission = useCallback(() => {
+    setFitMissionTrigger((v) => v + 1);
   }, []);
 
   const toggleLang = useCallback(() => {
@@ -304,62 +326,91 @@ export default function App() {
       className={`flex flex-col h-screen w-screen overflow-hidden bg-slate-950 font-sans ${themeClass}`}
       dir={isAr ? 'rtl' : 'ltr'}
     >
-      {/* Top Header */}
-      <Header
-        terrains={TERRAINS}
-        activeTerrainId={activeTerrainId}
-        onSelectTerrain={handleSelectTerrain}
-        onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
-        onOpenHelp={() => setIsHelpOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+      {/* Top Header (Controlled by settings.visibility.showHeader) */}
+      {settings.visibility.showHeader && (
+        <Header
+          terrains={TERRAINS}
+          activeTerrainId={activeTerrainId}
+          onSelectTerrain={handleSelectTerrain}
+          onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
+          onOpenHelp={() => setIsHelpOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onToggleFcs={() => handleUpdateSettings({ fcsPanelOpen: !settings.fcsPanelOpen })}
+          isFcsOpen={settings.fcsPanelOpen}
+          diagnostics={diagnostics}
+          solution={solution}
+          selectedWeapon={selectedWeapon}
+          lang={settings.language}
+          onToggleLang={toggleLang}
+          visibility={settings.visibility}
+        />
+      )}
+
+      {/* Mobile Mode Switcher Bar (< lg, Controlled by settings.visibility.showMobileTabs) */}
+      {settings.visibility.showMobileTabs && (
+        <div className="lg:hidden flex items-center justify-between bg-slate-900 border-b border-slate-800 px-3 py-1.5 shrink-0 z-20">
+          <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+            <button
+              onClick={() => setMobileTab('map')}
+              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-all ${
+                mobileTab === 'map'
+                  ? 'bg-sky-500 text-slate-950 shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isAr ? 'الخارطة التكتيكية' : 'Tactical Map'}
+            </button>
+            <button
+              onClick={() => setMobileTab('calc')}
+              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-all ${
+                mobileTab === 'calc'
+                  ? 'bg-sky-500 text-slate-950 shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isAr ? 'الحاسبة والحل' : 'Calculator & Sol'}
+            </button>
+          </div>
+
+          {/* Quick Solution Pill for Mobile */}
+          {settings.visibility.showLiveSolutionPill && (
+            <div 
+              onClick={() => setMobileTab('calc')}
+              className="flex items-center gap-2 cursor-pointer font-mono text-[11px] bg-slate-950/80 px-2.5 py-1 rounded-md border border-slate-800 hover:border-sky-500"
+            >
+              <span className="text-sky-400 font-bold">AZ: {solution.azimuthMils}</span>
+              <span className="text-slate-600">|</span>
+              <span className="text-emerald-400 font-bold">
+                EL: {solution.elevationDeg !== null ? `${solution.elevationDeg.toFixed(1)}°` : '---'}
+              </span>
+              <span className="text-slate-600">|</span>
+              <span className="text-slate-300">Ring {solution.charge}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Floating Accessible Three-Dot Settings & Visibility Menu Button */}
+      <ThreeDotMenu
+        isOpen={isThreeDotOpen}
+        onToggle={() => setIsThreeDotOpen((v) => !v)}
+        onClose={() => setIsThreeDotOpen(false)}
+        settings={settings}
+        onUpdateSettings={handleUpdateSettings}
+        onQuickMapOnly={handleQuickMapOnly}
+        onQuickShowAll={handleQuickShowAll}
+        onQuickRestoreDefault={handleQuickRestoreDefault}
+        onOpenFullSettings={() => setIsSettingsOpen(true)}
         onToggleFcs={() => handleUpdateSettings({ fcsPanelOpen: !settings.fcsPanelOpen })}
         isFcsOpen={settings.fcsPanelOpen}
-        diagnostics={diagnostics}
-        solution={solution}
-        selectedWeapon={selectedWeapon}
-        lang={settings.language}
+        onToggleWeather={() => handleUpdateSettings({ weatherPanelOpen: !settings.weatherPanelOpen })}
+        isWeatherOpen={settings.weatherPanelOpen}
+        onToggleRuler={() => setIsRulerActive((v) => !v)}
+        isRulerActive={isRulerActive}
+        onFitMission={handleFitMission}
         onToggleLang={toggleLang}
+        lang={settings.language}
       />
-
-      {/* Mobile Mode Switcher Bar (< lg) */}
-      <div className="lg:hidden flex items-center justify-between bg-slate-900 border-b border-slate-800 px-3 py-1.5 shrink-0 z-20">
-        <div className="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
-          <button
-            onClick={() => setMobileTab('map')}
-            className={`px-3 py-1 text-xs font-mono font-bold rounded transition-all ${
-              mobileTab === 'map'
-                ? 'bg-sky-500 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            {isAr ? 'الخارطة التكتيكية' : 'Tactical Map'}
-          </button>
-          <button
-            onClick={() => setMobileTab('calc')}
-            className={`px-3 py-1 text-xs font-mono font-bold rounded transition-all ${
-              mobileTab === 'calc'
-                ? 'bg-sky-500 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            {isAr ? 'الحاسبة والحل' : 'Calculator & Sol'}
-          </button>
-        </div>
-
-        {/* Quick Solution Pill for Mobile */}
-        <div 
-          onClick={() => setMobileTab('calc')}
-          className="flex items-center gap-2 cursor-pointer font-mono text-[11px] bg-slate-950/80 px-2.5 py-1 rounded-md border border-slate-800 hover:border-sky-500"
-        >
-          <span className="text-sky-400 font-bold">AZ: {solution.azimuthMils}</span>
-          <span className="text-slate-600">|</span>
-          <span className="text-emerald-400 font-bold">
-            EL: {solution.elevationDeg !== null ? `${solution.elevationDeg.toFixed(1)}°` : '---'}
-          </span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-300">Ring {solution.charge}</span>
-        </div>
-      </div>
 
       {/* Main Workspace Layout (Map-Only Primary Interface with Collapsible Sidebar) */}
       <div className={`flex-1 flex min-h-0 overflow-hidden relative ${
@@ -393,6 +444,7 @@ export default function App() {
             onToggleFcs={() => handleUpdateSettings({ fcsPanelOpen: !settings.fcsPanelOpen })}
             onToggleSettings={() => setIsSettingsOpen(true)}
             lang={settings.language}
+            fitMissionTrigger={fitMissionTrigger}
           />
 
           {/* Floating Weather & Wind HUD Overlay (When enabled) */}
@@ -454,6 +506,9 @@ export default function App() {
         onDeleteMortar={handleDeleteMortar}
         onImportBackup={handleImportBackup}
         onResetSection={handleResetSection}
+        onQuickMapOnly={handleQuickMapOnly}
+        onQuickShowAll={handleQuickShowAll}
+        onQuickRestoreDefault={handleQuickRestoreDefault}
       />
 
       {/* Custom Tactical Marker Modal */}
