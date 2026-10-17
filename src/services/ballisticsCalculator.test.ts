@@ -401,6 +401,48 @@ describe('Mortar Ballistic Engine - Dynamic Charges & Brackets Validation', () =
       const expectedDeg = Math.round(((sol.elevationMils! * 360) / 6000) * 10) / 10;
       expect(sol.elevationDeg).toBe(expectedDeg);
     });
+
+    it('verifies independent configurations and complete specification metadata for M252 and 2B14', () => {
+      // 1. American M252 Mortar
+      expect(m252Weapon.shortName).toBe('M252');
+      expect(m252Weapon.caliber).toBe('81 mm');
+      expect(m252Weapon.angularSystemDescription).toBe('6400 mil per full circle');
+      expect(m252Weapon.minElevation).toBe(800);
+      expect(m252Weapon.minElevationDeg).toBe(45.0);
+      expect(m252Weapon.maxElevation).toBe(1515);
+      expect(m252Weapon.maxElevationDeg).toBe(85.2);
+      expect(m252Weapon.verificationStatus).toBe('Requires verification against the existing game implementation');
+      expect(m252Weapon.ammunition?.length).toBeGreaterThanOrEqual(4);
+
+      // Formatted limits
+      const m252MinLimitStr = `${m252Weapon.minElevation} mil ≈ ${m252Weapon.minElevationDeg?.toFixed(1)}°`;
+      const m252MaxLimitStr = `${m252Weapon.maxElevation} mil ≈ ${m252Weapon.maxElevationDeg?.toFixed(1)}°`;
+      expect(m252MinLimitStr).toBe('800 mil ≈ 45.0°');
+      expect(m252MaxLimitStr).toBe('1515 mil ≈ 85.2°');
+
+      // 2. Russian 2B14 Mortar
+      expect(podnosWeapon.shortName).toBe('2B14');
+      expect(podnosWeapon.caliber).toBe('82 mm');
+      expect(podnosWeapon.angularSystemDescription).toBe('6000 mil per full circle');
+      expect(podnosWeapon.minElevation).toBe(748);
+      expect(podnosWeapon.minElevationDeg).toBe(44.9);
+      expect(podnosWeapon.maxElevation).toBe(1415);
+      expect(podnosWeapon.maxElevationDeg).toBe(84.9);
+      expect(podnosWeapon.verificationStatus).toBe('Requires verification against the existing game implementation');
+      expect(podnosWeapon.ammunition?.length).toBeGreaterThanOrEqual(3);
+
+      // Formatted limits
+      const podnosMinLimitStr = `${podnosWeapon.minElevation} mil ≈ ${podnosWeapon.minElevationDeg?.toFixed(1)}°`;
+      const podnosMaxLimitStr = `${podnosWeapon.maxElevation} mil ≈ ${podnosWeapon.maxElevationDeg?.toFixed(1)}°`;
+      expect(podnosMinLimitStr).toBe('748 mil ≈ 44.9°');
+      expect(podnosMaxLimitStr).toBe('1415 mil ≈ 84.9°');
+
+      // 3. Confirm systems are fully independent
+      expect(m252Weapon.milsPerCircle).not.toBe(podnosWeapon.milsPerCircle);
+      expect(m252Weapon.minElevation).not.toBe(podnosWeapon.minElevation);
+      expect(m252Weapon.maxElevation).not.toBe(podnosWeapon.maxElevation);
+      expect(m252Weapon.ammunition).not.toBe(podnosWeapon.ammunition);
+    });
   });
 });
 

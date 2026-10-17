@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { WeaponConfig, BallisticSolution, TerrainConfig } from '../types';
 import { formatGridCoord } from '../data/ballistics';
+import { MortarInfoCard } from './MortarInfoCard';
 import { 
   Crosshair, 
   Target, 
@@ -10,8 +11,8 @@ import {
   Copy,
   Check,
   Zap,
-  Shield,
-  Layers
+  Layers,
+  MapPin
 } from 'lucide-react';
 
 interface FireControlPanelProps {
@@ -28,6 +29,7 @@ interface FireControlPanelProps {
   onGunChange: (pos: { x: number; z: number; alt: number }) => void;
   onTargetChange: (pos: { x: number; z: number; alt: number }) => void;
   solution: BallisticSolution;
+  lang?: 'en' | 'ar';
 }
 
 export const FireControlPanel: React.FC<FireControlPanelProps> = ({
@@ -44,6 +46,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
   onGunChange,
   onTargetChange,
   solution,
+  lang = 'en',
 }) => {
   const [gridInputGun, setGridInputGun] = useState('');
   const [gridInputTarget, setGridInputTarget] = useState('');
@@ -98,7 +101,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
     const dhwStr = solution.dElevPer100m ? ` | ΔHw: ${solution.dElevPer100m}` : '';
     const ammoLabel = activeAmmo ? `${activeAmmo.name} (${activeAmmo.weightKg}kg)` : solution.ammoType;
 
-    const text = `[FIRE MISSION - ${terrain.name.toUpperCase()}] ${selectedWeapon.name} [${ammoLabel}] | RING: ${solution.charge} | AZ: ${azMilStr} mils (${solution.azimuthDeg}°) | EL: ${elevMilStr} mils (${solution.elevationDeg ?? '--'}°) | RNG: ${solution.horizontalDistance}m (ΔH: ${solution.heightDifference >= 0 ? '+' : ''}${solution.heightDifference}m) | TOF: ${solution.timeOfFlight || 0}s${ysStr}${dhwStr} | GUN: ${formatGridCoord(gunPos.x, gunPos.z, 6)} | TGT: ${formatGridCoord(targetPos.x, targetPos.z, 6)}`;
+    const text = `[FIRE MISSION - ${terrain.name.toUpperCase()}] ${selectedWeapon.name} [${ammoLabel}] | RING: ${solution.charge} | AZ: ${azMilStr} mils (${solution.azimuthDeg}°) | EL: ${elevMilStr} mils (${solution.elevationDeg !== null ? `${solution.elevationDeg.toFixed(1)}°` : '--'}) | RNG: ${solution.horizontalDistance}m (ΔH: ${solution.heightDifference >= 0 ? '+' : ''}${solution.heightDifference}m) | TOF: ${solution.timeOfFlight || 0}s${ysStr}${dhwStr} | GUN: ${formatGridCoord(gunPos.x, gunPos.z, 6)} | TGT: ${formatGridCoord(targetPos.x, targetPos.z, 6)}`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -106,6 +109,46 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
   };
 
   const isAutoMode = selectedCharge === -1;
+
+  // Localized dictionary
+  const isAr = lang === 'ar';
+  const t = {
+    panelTitle: isAr ? 'منظومة إدارة النيران (FCS)' : 'Fire Control System',
+    panelSubtitle: isAr 
+      ? 'محرك حسابات باليستية دقيق للهاونات مع دعم كامل لمستويات الارتفاع بالدرجات والمل.' 
+      : 'Dual-mortar ballistic engine with comprehensive ammunition registry and live elevation resolver.',
+    ordnance: isAr ? 'منظومة الهاون / السلاح' : 'Ordnance / Mortar System',
+    ammoType: isAr ? 'نوع الذخيرة' : 'Ammunition Type',
+    weight: isAr ? 'الوزن' : 'Weight',
+    propellantCharges: isAr ? 'حلقات الدفع والتعمير (Rings)' : 'Propellant Charge Rings',
+    activeRing: isAr ? 'الحلقة النشطة: رينغ' : 'Active: Ring',
+    bracket: isAr ? 'نطاق المدى' : 'Bracket',
+    autoOpt: isAr ? 'تلقائي' : 'AUTO',
+    readyToFire: isAr ? '● جاهز للإطلاق' : '● READY TO FIRE',
+    outOfRange: isAr ? '▲ خارج المدى' : '▲ OUT OF RANGE',
+    ammo: isAr ? 'الذخيرة:' : 'Ammo:',
+    azimuthDir: isAr ? 'زاوية السمت (الاتجاه)' : 'AZIMUTH (DIR)',
+    elevationTube: isAr ? 'زاوية الارتفاع (الماسورة)' : 'ELEVATION (TUBE)',
+    trueDeg: isAr ? 'حقيقي' : 'True',
+    targetDist: isAr ? 'المسافة للهدف' : 'Target Dist',
+    slant: isAr ? 'مائل' : 'Slant',
+    timeOfFlight: isAr ? 'زمن التحليق' : 'Time of Flight',
+    toImpact: isAr ? 'حتى الارتطام' : 'To impact',
+    deltaAlt: isAr ? 'فرق الارتفاع (ΔH)' : 'Delta Alt (ΔH)',
+    tgtMinusGun: isAr ? 'الهدف - المدفع' : 'Tgt - Gun',
+    peakAlt: isAr ? 'أقصى ارتفاع (Ys)' : 'Peak Alt (Ys)',
+    deltaHw: isAr ? 'معامل ΔHw (لكل 100م)' : 'ΔHw (per 100m)',
+    impactAngle: isAr ? 'زاوية السقوط' : 'Impact Angle',
+    radioCallout: isAr ? 'نداء الراديو للسرية:' : 'Squad Radio Callout:',
+    copyMission: isAr ? 'نسخ أمر الرماية' : 'Copy Fire Mission',
+    copied: isAr ? 'تم نسخ الأمر!' : 'Copied Mission!',
+    gunBattery: isAr ? 'موقع المدفع / المربض' : 'GUN / BATTERY POSITION',
+    primaryTarget: isAr ? 'موقع الهدف الرئيسي (T1)' : 'PRIMARY TARGET (T1)',
+    apply: isAr ? 'تطبيق' : 'Apply',
+    tacticalLocations: isAr ? 'مواقع تكتيكية على خارطة' : 'Tactical Locations on',
+    minElev: isAr ? 'الارتفاع الأدنى:' : 'Min Elev:',
+    maxElev: isAr ? 'الارتفاع الأقصى:' : 'Max Elev:',
+  };
 
   return (
     <div className="w-full h-full flex flex-col bg-slate-900 border-l border-slate-800 text-slate-200 overflow-y-auto">
@@ -115,7 +158,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
             <h2 className="text-sm font-bold tracking-wider text-sky-400 uppercase font-mono">
-              Fire Control System
+              {t.panelTitle}
             </h2>
           </div>
           <span className="text-[10px] bg-slate-800 text-slate-400 font-mono px-2 py-0.5 rounded border border-slate-700">
@@ -123,15 +166,15 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
           </span>
         </div>
         <p className="text-[11px] text-slate-400 mt-1">
-          Dual-mortar ballistic engine with comprehensive ammunition registry and live elevation resolver.
+          {t.panelSubtitle}
         </p>
       </div>
 
       <div className="p-3.5 md:p-4 space-y-4 md:space-y-5 flex-1">
-        {/* Weapon Selection: American vs Russian */}
+        {/* Weapon Selection: American M252 vs Russian 2B14 */}
         <div>
           <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5 flex items-center justify-between">
-            <span>Ordnance / Mortar System</span>
+            <span>{t.ordnance}</span>
             <span className="text-sky-400 font-mono text-[10px]">{selectedWeapon.caliber}</span>
           </label>
           <div className="grid grid-cols-1 gap-2">
@@ -163,8 +206,25 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                       {w.caliber}
                     </span>
                   </div>
+
                   <div className="text-[10px] text-slate-400 mt-1 line-clamp-1">
                     {w.description}
+                  </div>
+
+                  {/* Required Angular Display for Elevation Limits */}
+                  <div className="mt-2 pt-2 border-t border-slate-850 flex items-center justify-between text-[10px] font-mono">
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500">{t.minElev}</span>
+                      <span className="text-sky-300 font-bold">
+                        {isAmerican ? '800 mil ≈ 45.0°' : isRussian ? '748 mil ≈ 44.9°' : `${w.minElevation} mil`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500">{t.maxElev}</span>
+                      <span className="text-emerald-300 font-bold">
+                        {isAmerican ? '1515 mil ≈ 85.2°' : isRussian ? '1415 mil ≈ 84.9°' : `${w.maxElevation} mil`}
+                      </span>
+                    </div>
                   </div>
                 </button>
               );
@@ -172,13 +232,20 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
           </div>
         </div>
 
+        {/* Dedicated Mortar Information Panel (Section 1 & Section 2 Requirements) */}
+        <MortarInfoCard
+          weapon={selectedWeapon}
+          selectedAmmo={activeAmmo}
+          lang={lang}
+        />
+
         {/* Ammunition Type Selector (HE, ILLUM, SMOKE, TRAINING) */}
         {selectedWeapon.ammunition && selectedWeapon.ammunition.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-sky-400" />
-                <span>Ammunition Type</span>
+                <span>{t.ammoType}</span>
               </label>
               <span className="text-[10px] font-mono text-slate-400">
                 {activeAmmo ? `${activeAmmo.weightKg.toFixed(2)} kg` : ''}
@@ -225,7 +292,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                     </span>
                   </div>
                   <span className="font-mono text-slate-400 text-[10px] bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
-                    Weight: {activeAmmo.weightKg.toFixed(2)} kg
+                    {t.weight}: {activeAmmo.weightKg.toFixed(2)} kg
                   </span>
                 </div>
               )}
@@ -237,13 +304,13 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span>Propellant Charge Rings</span>
+              <span>{t.propellantCharges}</span>
               <span className="text-[10px] text-sky-400 font-mono font-semibold">
-                Active: Ring {solution.charge}
+                {t.activeRing} {solution.charge}
               </span>
             </label>
             <span className="text-slate-400 text-[10px] font-mono">
-              Bracket: {activeCharges[solution.charge]?.minRange}m – {activeCharges[solution.charge]?.maxRange}m
+              {t.bracket}: {activeCharges[solution.charge]?.minRange}m – {activeCharges[solution.charge]?.maxRange}m
             </span>
           </div>
 
@@ -259,7 +326,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
               title="Automatically select optimal charge ring based on target distance"
             >
               <Zap className="w-3.5 h-3.5 mb-0.5" />
-              <span className="text-[10px] font-bold">AUTO</span>
+              <span className="text-[10px] font-bold">{t.autoOpt}</span>
               <span className="text-[8px] opacity-80">Opt.</span>
             </button>
 
@@ -306,10 +373,10 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                   : 'bg-red-950 text-red-400 border border-red-700/60'
               }`}
             >
-              {solution.inRange ? '● READY TO FIRE' : '▲ OUT OF RANGE'}
+              {solution.inRange ? t.readyToFire : t.outOfRange}
             </span>
             <span className="text-[10px] text-sky-300 font-mono">
-              Ammo: <b>{solution.ammoType}</b>
+              {t.ammo} <b>{solution.ammoType}</b>
             </span>
           </div>
 
@@ -323,7 +390,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
             {/* Azimuth Box: Both Degrees and Mils */}
             <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5">
               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center justify-between">
-                <span>AZIMUTH (DIR)</span>
+                <span>{t.azimuthDir}</span>
                 <Compass className="w-3.5 h-3.5 text-sky-400" />
               </div>
               <div className="text-xl font-bold font-mono text-sky-400 mt-1">
@@ -334,16 +401,17 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                   : `${solution.azimuthMils} mils`}
               </div>
               <div className="text-[11px] font-mono text-slate-300 mt-0.5 font-bold">
-                {solution.azimuthDeg.toFixed(1)}° True
+                {solution.azimuthDeg.toFixed(1)}° {t.trueDeg}
               </div>
             </div>
 
             {/* Elevation Box: Both Degrees and Mils */}
             <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5">
               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center justify-between">
-                <span>ELEVATION (TUBE)</span>
+                <span>{t.elevationTube}</span>
                 <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
               </div>
+              {/* PRIMARY GREEN DISPLAY: Degrees with mathematical degree symbol and 1 decimal place */}
               <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
                 {solution.elevationDeg !== null ? `${solution.elevationDeg.toFixed(1)}°` : '---'}
               </div>
@@ -365,46 +433,46 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
           {/* Secondary Ballistic Telemetry */}
           <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-800/80 text-center font-mono">
             <div>
-              <div className="text-[9px] text-slate-500 uppercase">Target Dist</div>
+              <div className="text-[9px] text-slate-500 uppercase">{t.targetDist}</div>
               <div className="text-sm font-bold text-slate-200 mt-0.5">{solution.horizontalDistance} m</div>
-              <div className="text-[9px] text-slate-500">Slant: {solution.slantDistance}m</div>
+              <div className="text-[9px] text-slate-500">{t.slant}: {solution.slantDistance}m</div>
             </div>
             <div>
-              <div className="text-[9px] text-slate-500 uppercase">Time of Flight</div>
+              <div className="text-[9px] text-slate-500 uppercase">{t.timeOfFlight}</div>
               <div className="text-sm font-bold text-amber-400 mt-0.5 flex items-center justify-center gap-1">
                 <Clock className="w-3 h-3" />
                 <span>{solution.timeOfFlight ? `${solution.timeOfFlight}s` : '---'}</span>
               </div>
-              <div className="text-[9px] text-slate-500">To impact</div>
+              <div className="text-[9px] text-slate-500">{t.toImpact}</div>
             </div>
             <div>
-              <div className="text-[9px] text-slate-500 uppercase">Delta Alt (ΔH)</div>
+              <div className="text-[9px] text-slate-500 uppercase">{t.deltaAlt}</div>
               <div className={`text-sm font-bold mt-0.5 ${solution.heightDifference >= 0 ? 'text-sky-300' : 'text-slate-400'}`}>
                 {solution.heightDifference >= 0 ? `+${solution.heightDifference}` : solution.heightDifference} m
               </div>
-              <div className="text-[9px] text-slate-500">Tgt - Gun</div>
+              <div className="text-[9px] text-slate-500">{t.tgtMinusGun}</div>
             </div>
           </div>
 
           {/* Tertiary Tactical Parameters: Peak Alt (Ys), Delta Hw, Impact Angle */}
           <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-800/40 text-center font-mono text-[10px]">
             <div className="bg-slate-900/50 p-1 rounded">
-              <span className="text-[8px] text-slate-500 block uppercase">Peak Alt (Ys)</span>
+              <span className="text-[8px] text-slate-500 block uppercase">{t.peakAlt}</span>
               <span className="font-bold text-sky-300">{solution.peakAlt ? `${solution.peakAlt}m` : '---'}</span>
             </div>
             <div className="bg-slate-900/50 p-1 rounded">
-              <span className="text-[8px] text-slate-500 block uppercase">ΔHw (per 100m)</span>
+              <span className="text-[8px] text-slate-500 block uppercase">{t.deltaHw}</span>
               <span className="font-bold text-emerald-300">{solution.dElevPer100m ? `${solution.dElevPer100m} mil` : '---'}</span>
             </div>
             <div className="bg-slate-900/50 p-1 rounded">
-              <span className="text-[8px] text-slate-500 block uppercase">Impact Angle</span>
+              <span className="text-[8px] text-slate-500 block uppercase">{t.impactAngle}</span>
               <span className="font-bold text-slate-300">{solution.angleImpact ? `${solution.angleImpact}°` : '---'}</span>
             </div>
           </div>
 
           {/* One-Click Copy Fire Mission */}
           <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 font-mono">Squad Radio Callout:</span>
+            <span className="text-[10px] text-slate-400 font-mono">{t.radioCallout}</span>
             <button
               onClick={copyFireMission}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
@@ -414,7 +482,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
               }`}
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied Mission!' : 'Copy Fire Mission'}</span>
+              <span>{copied ? t.copied : t.copyMission}</span>
             </button>
           </div>
         </div>
@@ -426,7 +494,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5 text-sky-400 text-xs font-bold font-mono">
                 <Crosshair className="w-3.5 h-3.5" />
-                <span>GUN / BATTERY POSITION</span>
+                <span>{t.gunBattery}</span>
               </div>
               <span className="text-[10px] font-mono bg-sky-950 text-sky-300 px-1.5 py-0.5 rounded border border-sky-800">
                 {formatGridCoord(gunPos.x, gunPos.z, 6)}
@@ -495,7 +563,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                 onClick={() => applyGridCoord(gridInputGun, true)}
                 className="px-2.5 py-1.5 bg-sky-900 hover:bg-sky-800 text-sky-200 text-[11px] font-mono font-bold rounded"
               >
-                Apply
+                {t.apply}
               </button>
             </div>
           </div>
@@ -505,7 +573,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5 text-red-400 text-xs font-bold font-mono">
                 <Target className="w-3.5 h-3.5" />
-                <span>PRIMARY TARGET (T1)</span>
+                <span>{t.primaryTarget}</span>
               </div>
               <span className="text-[10px] font-mono bg-red-950 text-red-300 px-1.5 py-0.5 rounded border border-red-800">
                 {formatGridCoord(targetPos.x, targetPos.z, 6)}
@@ -574,7 +642,7 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
                 onClick={() => applyGridCoord(gridInputTarget, false)}
                 className="px-2.5 py-1.5 bg-red-900 hover:bg-red-800 text-red-200 text-[11px] font-mono font-bold rounded"
               >
-                Apply
+                {t.apply}
               </button>
             </div>
           </div>
@@ -583,16 +651,17 @@ export const FireControlPanel: React.FC<FireControlPanelProps> = ({
         {/* Quick Terrain Presets */}
         <div>
           <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-            Tactical Locations on {terrain.name}
+            {t.tacticalLocations} {terrain.name}
           </label>
           <div className="flex flex-wrap gap-1.5">
             {terrain.pois.slice(0, 8).map((poi) => (
               <button
                 key={poi.name}
                 onClick={() => onTargetChange({ x: poi.x, z: poi.z, alt: poi.elevation || 20 })}
-                className="text-[10px] font-mono bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 px-2 py-1 rounded transition-all"
+                className="text-[10px] font-mono bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 px-2 py-1 rounded transition-all flex items-center gap-1"
               >
-                🎯 {poi.name}
+                <MapPin className="w-3 h-3 text-red-400" />
+                <span>{poi.name}</span>
               </button>
             ))}
           </div>

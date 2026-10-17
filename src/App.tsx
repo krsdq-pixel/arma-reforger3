@@ -1,14 +1,44 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { TERRAINS } from './data/maps';
 import { WEAPONS, calculateFiringSolution } from './data/ballistics';
-import { TerrainId, MapLayerType, TileDiagnostics, WeaponConfig } from './types';
+import { 
+  TerrainId, 
+  MapLayerType, 
+  TileDiagnostics, 
+  WeaponConfig,
+  AppCustomizationSettings,
+  MapOverlaySettings,
+  WeatherSettings,
+  CustomMapMarker,
+  CustomMortarConfig,
+  AppExportData
+} from './types';
+import { StorageService } from './services/storageService';
 import { Header } from './components/Header';
 import { TacticalMap } from './components/TacticalMap';
 import { FireControlPanel } from './components/FireControlPanel';
 import { DiagnosticsModal } from './components/DiagnosticsModal';
 import { HelpModal } from './components/HelpModal';
+import { SettingsModal } from './components/SettingsModal';
+import { CustomMarkerModal } from './components/CustomMarkerModal';
+import { WeatherWidget } from './components/WeatherWidget';
 
 export default function App() {
+  // 1. Persistent Storage State (Browser LocalStorage)
+  const [settings, setSettings] = useState<AppCustomizationSettings>(() => StorageService.loadSettings());
+  const [overlays, setOverlays] = useState<MapOverlaySettings>(() => StorageService.loadOverlays());
+  const [weather, setWeather] = useState<WeatherSettings>(() => StorageService.loadWeather());
+  const [customMarkers, setCustomMarkers] = useState<CustomMapMarker[]>(() => StorageService.loadMarkers());
+  const [customMortars, setCustomMortars] = useState<CustomMortarConfig[]>(() => StorageService.loadCustomMortars());
+
+  // 2. Modals State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMarkerModalOpen, setIsMarkerModalOpen] = useState(false);
+  const [markerModalCoords, setMarkerModalCoords] = useState<{ x: number; z: number }>({ x: 0, z: 0 });
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // 3. Operational Map & Weapon State
   const [activeTerrainId, setActiveTerrainId] = useState<TerrainId>('everon');
   const [activeLayer, setActiveLayer] = useState<MapLayerType>('topo');
   const [selectedWeapon, setSelectedWeapon] = useState<WeaponConfig>(WEAPONS[0]);
@@ -45,10 +75,154 @@ export default function App() {
     httpStatus: null,
   });
 
-  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  // Combine standard weapons with custom user-defined mortars
+  const allWeapons: WeaponConfig[] = useMemo(() => {
+    if (customMortars.length === 0) return WEAPONS;
 
-  // Switch weapon and reset charge to Auto and ammo to default for that weapon
+    const convertedCustoms: WeaponConfig[] = customMortars.map((cm) => {
+      // Find matching base charges from American or Soviet baseline
+      const base = cm.milsPerCircle === 6000 ? WEAPONS[1] : WEAPONS[0];
+      return {
+        id: cm.id,
+        name: cm.name,
+        shortName: cm.shortName,
+        faction: cm.milsPerCircle === 6000 ? 'Soviet Army' : 'US Army',
+        caliber: cm.caliber,
+        milSystem: cm.milSystem,
+        milsPerCircle: cm.milsPerCircle,
+        minElevation: cm.minElevation,
+        maxElevation: cm.maxElevation,
+        minElevationDeg: cm.minElevationDeg,
+        maxElevationDeg: cm.maxElevationDeg,
+        verificationStatus: cm.verificationStatus,
+        sourceInfo: cm.sourceInfo,
+        description: cm.description,
+        charges: base.charges,
+        ammunition: base.ammunition,
+      };
+    });
+
+    return [...WEAPONS, ...convertedCustoms];
+  }, [customMortars]);
+
+  // Update Settings with auto-persistence
+  const handleUpdateSettings = useCallback((partial: Partial<AppCustomizationSettings>) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...partial };
+      StorageService.saveSettings(next);
+      return next;
+    });
+  }, []);
+
+  // Update Overlays with auto-persistence
+  const handleUpdateOverlays = useCallback((partial: Partial<MapOverlaySettings>) => {
+    setOverlays((prev) => {
+      const next = { ...prev, ...partial };
+      StorageService.saveOverlays(next);
+      return next;
+    });
+  }, []);
+
+  // Update Weather with auto-persistence
+  const handleUpdateWeather = useCallback((partial: Partial<WeatherSettings>) => {
+    setWeather((prev) => {
+      const next = { ...prev, ...partial };
+      StorageService.saveWeather(next);
+      return next;
+    });
+  }, []);
+
+  // Custom Markers operations
+  const handleAddMarker = useCallback((marker: CustomMapMarker) => {
+    setCustomMarkers((prev) => {
+      const next = [...prev, marker];
+      StorageService.saveMarkers(next);
+      return next;
+    });
+  }, []);
+
+  const handleDeleteMarker = useCallback((id: string) => {
+    setCustomMarkers((prev) => {
+      const next = prev.filter((m) => m.id !== id);
+      StorageService.saveMarkers(next);
+      return next;
+    });
+  }, []);
+
+  // Custom Mortars operations
+  const handleAddMortar = useCallback((mortar: CustomMortarConfig) => {
+    setCustomMortars((prev) => {
+      const next = [...prev, mortar];
+      StorageService.saveCustomMortars(next);
+      return next;
+    });
+  }, []);
+
+  const handleDeleteMortar = useCallback((id: string) => {
+    setCustomMortars((prev) => {
+      const next = prev.filter((m) => m.id !== id);
+      StorageService.saveCustomMortars(next);
+      return next;
+    });
+  }, []);
+
+  // Import Backup operation
+  const handleImportBackup = useCallback((backup: AppExportData) => {
+    if (backup.settings) {
+      setSettings(backup.settings);
+      StorageService.saveSettings(backup.settings);
+    }
+    if (backup.overlaySettings) {
+      setOverlays(backup.overlaySettings);
+      StorageService.saveOverlays(backup.overlaySettings);
+    }
+    if (backup.weatherSettings) {
+      setWeather(backup.weatherSettings);
+      StorageService.saveWeather(backup.weatherSettings);
+    }
+    if (backup.customMarkers) {
+      setCustomMarkers(backup.customMarkers);
+      StorageService.saveMarkers(backup.customMarkers);
+    }
+    if (backup.customMortars) {
+      setCustomMortars(backup.customMortars);
+      StorageService.saveCustomMortars(backup.customMortars);
+    }
+  }, []);
+
+  // Granular Reset operations
+  const handleResetSection = useCallback((section: 'appearance' | 'map' | 'mortar' | 'language' | 'all' | 'userData' | 'factory') => {
+    if (section === 'appearance') {
+      setSettings((prev) => StorageService.resetAppearance(prev));
+    } else if (section === 'map') {
+      setOverlays(StorageService.resetMapDisplay());
+    } else if (section === 'mortar') {
+      setSettings((prev) => StorageService.resetMortarDisplay(prev));
+    } else if (section === 'language') {
+      setSettings((prev) => StorageService.resetLanguage(prev));
+    } else if (section === 'all') {
+      setSettings(StorageService.resetAllSettings());
+      setOverlays(StorageService.resetMapDisplay());
+      setWeather(StorageService.loadWeather());
+    } else if (section === 'userData') {
+      const { markers, mortars } = StorageService.clearUserData();
+      setCustomMarkers(markers);
+      setCustomMortars(mortars);
+    } else if (section === 'factory') {
+      StorageService.factoryReset();
+      setSettings(StorageService.loadSettings());
+      setOverlays(StorageService.loadOverlays());
+      setWeather(StorageService.loadWeather());
+      setCustomMarkers([]);
+      setCustomMortars([]);
+    }
+  }, []);
+
+  const toggleLang = useCallback(() => {
+    handleUpdateSettings({ language: settings.language === 'en' ? 'ar' : 'en' });
+  }, [settings.language, handleUpdateSettings]);
+
+  // Switch weapon and reset charge to Auto and ammo to default
   const handleSelectWeapon = useCallback((weapon: WeaponConfig) => {
     setSelectedWeapon(weapon);
     setSelectedCharge(-1);
@@ -57,7 +231,7 @@ export default function App() {
     }
   }, []);
 
-  // Switch terrain (Section 6.4: Keep stored game coordinates if inside new terrain bounds)
+  // Switch terrain
   const handleSelectTerrain = (id: TerrainId) => {
     setActiveTerrainId(id);
     const newTerrain = TERRAINS[id];
@@ -76,27 +250,24 @@ export default function App() {
         z: newTerrain.defaultTarget[1],
         alt: 60,
       });
-      setTerrainNotice('Markers cleared: outside this terrain');
+      setTerrainNotice('Markers repositioned within new terrain bounds');
       setTimeout(() => setTerrainNotice(null), 3500);
     }
 
-    // If Kolguyev doesn't have drawn layer, fall back to topo
     if (id === 'kolguyev' && activeLayer === 'drawn') {
       setActiveLayer('topo');
     }
   };
 
-  // Diagnostics updater
   const handleDiagnosticsUpdate = useCallback((partial: Partial<TileDiagnostics>) => {
     setDiagnostics((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  // Ballistic solution calculation tailored to active ammunition
+  // Ballistic solution calculation
   const solution = useMemo(() => {
     return calculateFiringSolution(selectedWeapon, gunPos, targetPos, selectedCharge, selectedAmmoId);
   }, [selectedWeapon, gunPos, targetPos, selectedCharge, selectedAmmoId]);
 
-  // Current charge min/max ranges for range ring display (adapts dynamically to active ammunition and ring)
   const activeAmmo = selectedWeapon.ammunition?.find((a) => a.id === selectedAmmoId) || selectedWeapon.ammunition?.[0];
   const activeCharges = activeAmmo ? activeAmmo.charges : selectedWeapon.charges;
   const currentChargeObj = activeCharges[solution.charge] || activeCharges[0];
@@ -109,8 +280,30 @@ export default function App() {
 
   const [mobileTab, setMobileTab] = useState<'map' | 'calc'>('map');
 
+  // Trigger custom marker modal with given coords
+  const handleOpenMarkerModal = useCallback((coords: { x: number; z: number }) => {
+    setMarkerModalCoords(coords);
+    setIsMarkerModalOpen(true);
+  }, []);
+
+  // Theme styling classes
+  const themeClass = settings.theme === 'night_ops'
+    ? 'theme-night-ops'
+    : settings.theme === 'forest_slate'
+    ? 'theme-forest'
+    : settings.theme === 'desert_camo'
+    ? 'theme-desert'
+    : settings.theme === 'high_contrast'
+    ? 'theme-high-contrast'
+    : 'theme-dark-tactical';
+
+  const isAr = settings.language === 'ar';
+
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 font-sans">
+    <div 
+      className={`flex flex-col h-screen w-screen overflow-hidden bg-slate-950 font-sans ${themeClass}`}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       {/* Top Header */}
       <Header
         terrains={TERRAINS}
@@ -118,7 +311,14 @@ export default function App() {
         onSelectTerrain={handleSelectTerrain}
         onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
         onOpenHelp={() => setIsHelpOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onToggleFcs={() => handleUpdateSettings({ fcsPanelOpen: !settings.fcsPanelOpen })}
+        isFcsOpen={settings.fcsPanelOpen}
         diagnostics={diagnostics}
+        solution={solution}
+        selectedWeapon={selectedWeapon}
+        lang={settings.language}
+        onToggleLang={toggleLang}
       />
 
       {/* Mobile Mode Switcher Bar (< lg) */}
@@ -132,7 +332,7 @@ export default function App() {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Tactical Map
+            {isAr ? 'الخارطة التكتيكية' : 'Tactical Map'}
           </button>
           <button
             onClick={() => setMobileTab('calc')}
@@ -142,7 +342,7 @@ export default function App() {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Calculator & Sol
+            {isAr ? 'الحاسبة والحل' : 'Calculator & Sol'}
           </button>
         </div>
 
@@ -161,9 +361,11 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main Workspace Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden relative">
-        {/* Tactical Map (Primary view) */}
+      {/* Main Workspace Layout (Map-Only Primary Interface with Collapsible Sidebar) */}
+      <div className={`flex-1 flex min-h-0 overflow-hidden relative ${
+        settings.panelPosition === 'left' ? 'flex-col lg:flex-row-reverse' : 'flex-col lg:flex-row'
+      }`}>
+        {/* Tactical Map (Primary view - expands to 100% when FCS is closed) */}
         <div className={`flex-1 h-full relative ${mobileTab === 'calc' ? 'hidden lg:block' : 'block'}`}>
           <TacticalMap
             terrain={currentTerrain}
@@ -180,28 +382,88 @@ export default function App() {
             reloadTrigger={reloadTrigger}
             onRetry={handleRetry}
             terrainNotice={terrainNotice}
+            overlays={overlays}
+            settings={settings}
+            customMarkers={customMarkers}
+            onAddCustomMarker={handleAddMarker}
+            onDeleteCustomMarker={handleDeleteMarker}
+            onOpenMarkerModal={handleOpenMarkerModal}
+            weather={weather}
+            onToggleWeather={() => handleUpdateSettings({ weatherPanelOpen: !settings.weatherPanelOpen })}
+            onToggleFcs={() => handleUpdateSettings({ fcsPanelOpen: !settings.fcsPanelOpen })}
+            onToggleSettings={() => setIsSettingsOpen(true)}
+            lang={settings.language}
           />
+
+          {/* Floating Weather & Wind HUD Overlay (When enabled) */}
+          {settings.weatherPanelOpen && (
+            <div className="absolute top-16 right-3 sm:right-4 z-[1001] animate-in fade-in slide-in-from-top-2 duration-150">
+              <WeatherWidget
+                weather={weather}
+                onChange={handleUpdateWeather}
+                onClose={() => handleUpdateSettings({ weatherPanelOpen: false })}
+                lang={settings.language}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Fire Control Calculator Sidebar */}
-        <div className={`w-full lg:w-[420px] xl:w-[460px] h-full shrink-0 z-10 shadow-2xl ${mobileTab === 'map' ? 'hidden lg:flex' : 'flex'}`}>
-          <FireControlPanel
-            terrain={currentTerrain}
-            weapons={WEAPONS}
-            selectedWeapon={selectedWeapon}
-            onSelectWeapon={handleSelectWeapon}
-            selectedAmmoId={selectedAmmoId}
-            onSelectAmmo={setSelectedAmmoId}
-            selectedCharge={selectedCharge}
-            onSelectCharge={setSelectedCharge}
-            gunPos={gunPos}
-            targetPos={targetPos}
-            onGunChange={setGunPos}
-            onTargetChange={setTargetPos}
-            solution={solution}
-          />
-        </div>
+        {/* Fire Control Calculator Sidebar (Collapsible & Resizable on Desktop) */}
+        {settings.fcsPanelOpen && (
+          <div 
+            style={{ width: `${settings.panelWidth}px` }}
+            className={`w-full h-full shrink-0 z-10 shadow-2xl transition-all duration-200 ${
+              mobileTab === 'map' ? 'hidden lg:flex' : 'flex'
+            }`}
+          >
+            <FireControlPanel
+              terrain={currentTerrain}
+              weapons={allWeapons}
+              selectedWeapon={selectedWeapon}
+              onSelectWeapon={handleSelectWeapon}
+              selectedAmmoId={selectedAmmoId}
+              onSelectAmmo={setSelectedAmmoId}
+              selectedCharge={selectedCharge}
+              onSelectCharge={setSelectedCharge}
+              gunPos={gunPos}
+              targetPos={targetPos}
+              onGunChange={setGunPos}
+              onTargetChange={setTargetPos}
+              solution={solution}
+              lang={settings.language}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Comprehensive Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onUpdateSettings={handleUpdateSettings}
+        overlays={overlays}
+        onUpdateOverlays={handleUpdateOverlays}
+        weather={weather}
+        onUpdateWeather={handleUpdateWeather}
+        customMarkers={customMarkers}
+        onAddMarker={handleAddMarker}
+        onDeleteMarker={handleDeleteMarker}
+        customMortars={customMortars}
+        onAddMortar={handleAddMortar}
+        onDeleteMortar={handleDeleteMortar}
+        onImportBackup={handleImportBackup}
+        onResetSection={handleResetSection}
+      />
+
+      {/* Custom Tactical Marker Modal */}
+      <CustomMarkerModal
+        isOpen={isMarkerModalOpen}
+        onClose={() => setIsMarkerModalOpen(false)}
+        onSave={handleAddMarker}
+        defaultCoords={markerModalCoords}
+        lang={settings.language}
+      />
 
       {/* Developer Diagnostics Modal */}
       <DiagnosticsModal

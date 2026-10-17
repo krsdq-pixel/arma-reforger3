@@ -130,3 +130,46 @@
   white-space: nowrap !important;
 }
 
+/* Theme Configurations */
+.theme-night-ops {
+  --bg-primary: #050505;
+  --border-primary: #7f1d1d;
+}
+.theme-night-ops .leaflet-container {
+  background-color: #030303 !important;
+}
+
+.theme-forest {
+  --bg-primary: #05100c;
+  --border-primary: #064e3b;
+}
+.theme-forest .leaflet-container {
+  background-color: #040d09 !important;
+}
+
+.theme-desert {
+  --bg-primary: #120c06;
+  --border-primary: #78350f;
+}
+.theme-desert .leaflet-container {
+  background-color: #0e0904 !important;
+}
+
+.theme-high-contrast {
+  --bg-primary: #000000;
+  --border-primary: #38bdf8;
+}
+
+/* Leaflet Dark Custom Popup */
+.leaflet-popup-content-wrapper {
+  background: rgba(15, 23, 42, 0.96) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  color: #f1f5f9 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.96) !important;
+}
+

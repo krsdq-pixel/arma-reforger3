@@ -77,12 +77,18 @@ export interface WeaponCharge {
 export interface WeaponConfig {
   id: string;
   name: string;
+  shortName?: string;
   faction: 'US Army' | 'Soviet Army' | 'FIA';
   caliber: string;
   milSystem: MilSystem;
   milsPerCircle: number; // 6400 (NATO) or 6000 (Soviet)
-  minElevation: number;
-  maxElevation: number;
+  minElevation: number; // mils
+  maxElevation: number; // mils
+  minElevationDeg?: number; // approx degrees
+  maxElevationDeg?: number; // approx degrees
+  verificationStatus?: string;
+  sourceInfo?: string;
+  angularSystemDescription?: string;
   charges: WeaponCharge[];
   ammunition?: AmmoConfig[];
   description: string;
@@ -157,4 +163,107 @@ export interface TileDiagnostics {
   isReachable: boolean | null;
   pingMs: number | null;
   httpStatus: number | null;
+}
+
+export interface CustomMapMarker {
+  id: string;
+  name: string;
+  x: number;
+  z: number;
+  color: string;
+  category: 'observation' | 'enemy' | 'friendly' | 'objective' | 'waypoint';
+  notes?: string;
+  createdAt: number;
+}
+
+export type WindUnit = 'm/s' | 'km/h' | 'knots' | 'mph';
+
+export interface WeatherSettings {
+  enabled: boolean;
+  windSpeed: number; // Support values such as 5, 10, 15, 100 with broad configurable range
+  windUnit: WindUnit;
+  windDirectionDeg: number; // 0..360
+  dataSource: 'manual_observation' | 'mission_briefing';
+  recordedAt?: string;
+  isAdvisoryOnly: boolean;
+}
+
+export interface MapOverlaySettings {
+  showGrid: boolean;
+  show100mGrid: boolean;
+  showCapitals: boolean;
+  showTowns: boolean;
+  showVillages: boolean;
+  showHills: boolean;
+  showLandmarks: boolean;
+  showGunMarker: boolean;
+  showTargetMarker: boolean;
+  showTrajectoryLine: boolean;
+  showRangeRings: boolean;
+  showCustomMarkers: boolean;
+  showCoordinatesHud: boolean;
+  labelSize: 'sm' | 'md' | 'lg';
+  labelColor: string;
+}
+
+export interface CustomMortarConfig {
+  id: string;
+  name: string;
+  shortName: string;
+  caliber: string;
+  milSystem: MilSystem;
+  milsPerCircle: number;
+  minElevation: number;
+  maxElevation: number;
+  minElevationDeg?: number;
+  maxElevationDeg?: number;
+  verificationStatus: string;
+  sourceInfo: string;
+  description: string;
+  isUserDefined: boolean;
+  visibleFields?: {
+    azimuth: boolean;
+    elevation: boolean;
+    timeOfFlight: boolean;
+    distance: boolean;
+    deltaAlt: boolean;
+    peakAlt: boolean;
+    deltaHw: boolean;
+    impactAngle: boolean;
+  };
+}
+
+export type AppTheme = 'dark_tactical' | 'night_ops' | 'forest_slate' | 'desert_camo' | 'high_contrast';
+export type LayoutPreset = 'minimal_map' | 'compact' | 'standard' | 'info_rich' | 'custom';
+export type TextSize = 'sm' | 'md' | 'lg';
+export type DistanceUnit = 'meters' | 'kilometers';
+export type ElevationDisplayFormat = 'both' | 'degrees_first' | 'mils_first';
+
+export interface AppCustomizationSettings {
+  theme: AppTheme;
+  layoutPreset: LayoutPreset;
+  panelWidth: number; // in pixels (340 to 560)
+  panelPosition: 'right' | 'left';
+  panelOpacity: number; // 80, 90, 100
+  textSize: TextSize;
+  iconSize: 'sm' | 'md' | 'lg';
+  buttonSize: 'sm' | 'md' | 'lg';
+  distanceUnit: DistanceUnit;
+  decimalPrecision: number; // 0, 1, 2
+  elevationDisplayFormat: ElevationDisplayFormat;
+  language: 'en' | 'ar';
+  fcsPanelOpen: boolean;
+  weatherPanelOpen: boolean;
+  rulerToolOpen: boolean;
+}
+
+export interface AppExportData {
+  schemaVersion: 1;
+  exportedAt: string;
+  app: 'Arma Reforger FCS';
+  settings: AppCustomizationSettings;
+  overlaySettings: MapOverlaySettings;
+  weatherSettings: WeatherSettings;
+  customMarkers: CustomMapMarker[];
+  customMortars: CustomMortarConfig[];
 }

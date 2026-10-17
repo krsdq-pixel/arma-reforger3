@@ -5538,12 +5538,18 @@ export const WEAPONS: WeaponConfig[] = [
   {
     id: 'm252_81mm',
     name: 'M252 81mm Mortar',
+    shortName: 'M252',
     faction: 'US Army',
-    caliber: '81mm M821 HE',
+    caliber: '81 mm',
     milSystem: 'NATO',
     milsPerCircle: 6400,
+    angularSystemDescription: '6400 mil per full circle',
     minElevation: 800, // 45.0° (800 mils)
+    minElevationDeg: 45.0,
     maxElevation: 1515, // 85.2° (1515 mils)
+    maxElevationDeg: 85.2,
+    verificationStatus: 'Requires verification against the existing game implementation',
+    sourceInfo: 'Arma Reforger Vanilla Mortar & M67 Sight Unit (NATO standard 6400 mils)',
     description: 'American standard smoothbore battalion mortar. High-trajectory indirect fire from 50m to 2,900m using 0 to 4 propellant charge rings and M67 sight unit.',
     charges: [
   {
@@ -6164,12 +6170,18 @@ export const WEAPONS: WeaponConfig[] = [
   {
     id: '2b14_82mm',
     name: '2B14 Podnos 82mm Mortar',
+    shortName: '2B14',
     faction: 'Soviet Army',
-    caliber: '82mm O-832DU HE',
+    caliber: '82 mm',
     milSystem: 'SOVIET',
     milsPerCircle: 6000,
+    angularSystemDescription: '6000 mil per full circle',
     minElevation: 748, // 44.9° (07-48)
+    minElevationDeg: 44.9,
     maxElevation: 1415, // 84.9° (14-15)
+    maxElevationDeg: 84.9,
+    verificationStatus: 'Requires verification against the existing game implementation',
+    sourceInfo: 'Arma Reforger Vanilla Mortar & MPM-44M Sight Unit (Warsaw Pact 60-00 mils)',
     description: 'Soviet/Russian light battalion mortar. High trajectory fire from 50m to 2,300m using 0 to 4 additional ring charges and 60-00 Warsaw Pact sight graduations.',
     charges: [
   {
